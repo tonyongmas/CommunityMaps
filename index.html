@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>แผนที่ชุมชน เทศบาลตำบลตันหยงมัส</title>
+  <title>ระบบแผนที่สารสนเทศ เทศบาลตำบลตันหยงมัส</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -12,34 +14,111 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 
   <style>
-    body { margin: 0; padding: 0; }
-    #map { width: 100vw; height: 100vh; } /* ให้แผนที่เต็มจอ */
-    .title-box {
-      position: absolute; top: 10px; left: 50px; z-index: 1000;
-      background: white; padding: 10px 20px; border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.3); font-family: sans-serif;
+    /* ตั้งค่าเริ่มต้นและฟอนต์ */
+    body { 
+      margin: 0; 
+      padding: 0; 
+      font-family: 'Prompt', sans-serif; 
+      display: flex; 
+      flex-direction: column; 
+      height: 100vh; /* ให้ความสูงเต็มจอพอดี */
+      background-color: #f4f6f9;
+    }
+
+    /* แถบเมนูด้านบน (Navbar) */
+    .navbar {
+      background-color: #1A5276; /* สีน้ำเงินเข้ม */
+      color: white;
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      z-index: 1000; /* ให้อยู่เหนือแผนที่ */
+    }
+
+    .navbar-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .navbar-title h1 {
+      margin: 0;
+      font-size: 1.4rem;
+      font-weight: 500;
+    }
+
+    .navbar-title span {
+      font-size: 0.9rem;
+      color: #A9CCE3;
+      background: rgba(255,255,255,0.1);
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    /* ปุ่ม Admin */
+    .btn-admin {
+      background-color: #F39C12; /* สีส้ม */
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      font-family: 'Prompt', sans-serif;
+      font-size: 0.95rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+    }
+
+    .btn-admin:hover {
+      background-color: #D68910;
+      transform: translateY(-1px);
+    }
+
+    .btn-admin.active {
+      background-color: #27AE60; /* เปลี่ยนเป็นสีเขียวเมื่อล็อกอินแล้ว */
+    }
+
+    /* พื้นที่แผนที่ */
+    #map { 
+      flex-grow: 1; /* ขยายให้เต็มพื้นที่ที่เหลือจาก Navbar */
+      width: 100%; 
+      z-index: 1;
     }
   </style>
 </head>
 <body>
 
-  <div class="title-box">
-    <h3>แผนที่ชุมชน เทศบาลตำบลตันหยงมัส</h3>
+  <div class="navbar">
+    <div class="navbar-title">
+      <h1>📍 แผนที่ชุมชน</h1>
+      <span>เทศบาลตำบลตันหยงมัส</span>
+    </div>
+    <button id="adminBtn" class="btn-admin">
+      🔒 เข้าสู่ระบบแอดมิน
+    </button>
   </div>
+
   <div id="map"></div>
 
- <script>
+  <script>
+    // --- ตั้งค่าเริ่มต้น ---
     const MAP_CENTER = [6.29445, 101.72362];
-    // นำ URL เว็บแอปของคุณมาใส่ที่นี่
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzN3IxvSwJEd2Zz3zhf53R0130SCEMPm4IEmhJPRy0rmgX-QsagZMhHTP7VTUyHi0u_/exec'; 
+    const ADMIN_PASSWORD = "1234"; // ⚠️ เปลี่ยนรหัสผ่านของคุณตรงนี้
 
+    // สร้างแผนที่
     const map = L.map('map').setView(MAP_CENTER, 14);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    // --- ส่วนดึงข้อมูลและวาดลงแผนที่ ---
+    // --- ส่วนดึงข้อมูลและแสดงผล (สำหรับผู้ใช้ทั่วไป) ---
     fetch(SCRIPT_URL)
       .then(response => response.json())
       .then(data => {
@@ -49,49 +128,42 @@
             let mapLayer;
 
             if (item.type === 'marker') {
-              // 1. กรณีเป็น "จุดสถานที่สำคัญ"
               let markerOptions = {};
               if (item.icon && item.icon.trim() !== "") {
                 markerOptions.icon = L.icon({
-                  iconUrl: item.icon,
-                  iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32]
+                  iconUrl: item.icon, iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32]
                 });
               }
               mapLayer = L.marker(latlngs, markerOptions).addTo(map);
 
             } else if (item.type === 'boundary') {
-              // 2. กรณีเป็น "เส้นขอบเขตเทศบาล" (เพิ่มใหม่: เส้นประ ไม่มีสีพื้นหลัง)
               mapLayer = L.polygon(latlngs, { 
-                color: item.color || '#FF0000', // สีเส้นขอบ (ถ้าไม่ใส่สีใน Sheet จะเป็นสีแดง)
-                weight: 4,                      // ความหนาของเส้น
-                dashArray: '10, 10',            // สร้างเส้นประ (ตัวเลขแรกคือความยาวเส้น, ตัวเลขหลังคือช่องว่าง)
-                fillOpacity: 0                  // ทำให้พื้นที่ข้างในโปร่งใส 100% (เห็นแต่เส้นขอบ)
+                color: item.color || '#FF0000', weight: 4, dashArray: '10, 10', fillOpacity: 0
               }).addTo(map);
 
             } else if (item.type === 'polyline') {
-              // 3. กรณีเป็น "เส้นถนน"
-              mapLayer = L.polyline(latlngs, { 
-                color: item.color, weight: 5, opacity: 0.9 
-              }).addTo(map);
+              mapLayer = L.polyline(latlngs, { color: item.color, weight: 5, opacity: 0.9 }).addTo(map);
 
             } else {
-              // 4. กรณีเป็น "พื้นที่ชุมชน" (polygon ทั่วไป)
               mapLayer = L.polygon(latlngs, { 
                 color: item.color, fillColor: item.color, fillOpacity: 0.4, weight: 2
               }).addTo(map);
             }
             
-            mapLayer.bindPopup(`<b>${item.name}</b>`);
+            mapLayer.bindPopup(`<div style="font-family:'Prompt'; font-size:14px; text-align:center;"><b>${item.name}</b></div>`);
           } catch(e) {
              console.error("พิกัดไม่ถูกต้องสำหรับ: " + item.name);
           }
         });
-      });
+      })
+      .catch(err => console.error("ไม่สามารถเชื่อมต่อฐานข้อมูลได้:", err));
 
-    // --- ส่วนเครื่องมือวาด ---
+    // --- ส่วนของ Admin (ซ่อนไว้เป็นค่าเริ่มต้น) ---
+    let isAdmin = false;
     const drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
     
+    // สร้างเครื่องมือแต่ยังไม่ Add ลงแผนที่
     const drawControl = new L.Control.Draw({
       edit: { featureGroup: drawnItems },
       draw: {
@@ -99,9 +171,33 @@
         rectangle: false, circle: false, circlemarker: false
       }
     });
-    map.addControl(drawControl);
 
-    // --- เมื่อวาดเสร็จ ---
+    // จัดการเมื่อกดปุ่ม Admin
+    document.getElementById('adminBtn').addEventListener('click', () => {
+      if (isAdmin) {
+        alert("คุณอยู่ในโหมดแอดมินแล้ว สามารถใช้งานเครื่องมือวาดแผนที่ได้เลยครับ");
+        return;
+      }
+
+      // แสดงหน้าต่างถามรหัสผ่าน
+      const pass = prompt("กรุณาใส่รหัสผ่านสำหรับเจ้าหน้าที่ (Admin):");
+      
+      if (pass === ADMIN_PASSWORD) {
+        isAdmin = true;
+        map.addControl(drawControl); // เปิดแสดงเครื่องมือวาดฝั่งซ้าย
+        
+        // เปลี่ยนสไตล์ปุ่มให้รู้ว่าเข้าระบบแล้ว
+        const btn = document.getElementById('adminBtn');
+        btn.innerHTML = "👨‍💻 โหมดแอดมิน (พร้อมแก้ไข)";
+        btn.classList.add('active');
+        
+        alert("เข้าสู่ระบบแอดมินสำเร็จ! เครื่องมือวาดแผนที่ปรากฏขึ้นที่มุมซ้ายบนแล้ว");
+      } else if (pass !== null) {
+        alert("รหัสผ่านไม่ถูกต้อง!");
+      }
+    });
+
+    // --- จัดการพิกัดเมื่อแอดมินวาดเสร็จ ---
     map.on(L.Draw.Event.CREATED, function (event) {
       const layer = event.layer;
       const type = event.layerType; 
@@ -121,8 +217,7 @@
       window.prompt(`เพิ่ม ${typeTH} เสร็จแล้ว!\nก๊อปปี้พิกัดไปวางในช่อง C\n(หากเป็นขอบเขตเทศบาล ให้พิมพ์คำว่า "boundary" ในช่อง D)`, coordsString);
       drawnItems.addLayer(layer);
     });
-</script>
+  </script>
+
 </body>
 </html>
-
-
