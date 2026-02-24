@@ -138,7 +138,7 @@
 
             } else if (item.type === 'boundary') {
               mapLayer = L.polygon(latlngs, { 
-                color: item.color || '#FF0000', weight: 4, dashArray: '10, 10', fillOpacity: 0
+                color: item.color || '#FF0000', weight: 2, dashArray: '5, 5', fillOpacity: 0
               }).addTo(map);
 
             } else if (item.type === 'polyline') {
@@ -221,3 +221,4 @@
 
 </body>
 </html>
+
