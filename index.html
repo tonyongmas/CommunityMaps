@@ -21,7 +21,7 @@
     .navbar {
       background-color: #1A5276; color: white; padding: 10px 24px;
       display: flex; justify-content: space-between; align-items: center;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 1000; flex-wrap: wrap; gap: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 1000;
     }
 
     .navbar-title { display: flex; align-items: center; gap: 15px; }
@@ -30,9 +30,16 @@
     .title-text h1 { margin: 0; font-size: 1.8rem; font-weight: 600; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
     .title-text span { font-size: 1.1rem; color: #D6EAF8; margin-top: 2px; }
 
+    /* กลุ่มเมนูด้านขวา (ค้นหา + ปุ่ม Admin) */
+    .navbar-right {
+      display: flex;
+      align-items: center;
+      gap: 15px; /* ระยะห่างระหว่างกล่องค้นหากับปุ่ม Admin */
+    }
+
     /* ระบบค้นหา */
     .search-container {
-      display: flex; gap: 8px; flex-grow: 1; max-width: 400px; margin: 0 20px;
+      display: flex; gap: 8px; width: 350px; /* กำหนดความกว้างให้พอดี */
     }
     .search-container input {
       flex-grow: 1; padding: 10px 15px; border-radius: 6px; border: none;
@@ -51,18 +58,20 @@
       background-color: #F39C12; color: white; border: none; padding: 10px 18px;
       font-family: 'Prompt', sans-serif; font-size: 1rem; border-radius: 6px;
       cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 8px; font-weight: 500;
+      white-space: nowrap; /* ป้องกันข้อความในปุ่มตกบรรทัด */
     }
     .btn-admin:hover { background-color: #D68910; transform: translateY(-2px); }
     .btn-admin.active { background-color: #27AE60; }
 
     #map { flex-grow: 1; width: 100%; z-index: 1; }
 
-    /* Responsive มือถือ */
-    @media (max-width: 850px) {
-      .navbar { flex-direction: column; align-items: stretch; }
+    /* Responsive มือถือและแท็บเล็ต */
+    @media (max-width: 900px) {
+      .navbar { flex-direction: column; align-items: stretch; gap: 15px; }
       .navbar-title { justify-content: center; }
-      .search-container { max-width: 100%; margin: 5px 0; }
-      .btn-admin { justify-content: center; }
+      .navbar-right { flex-direction: column; width: 100%; gap: 10px; }
+      .search-container { width: 100%; }
+      .btn-admin { justify-content: center; width: 100%; }
     }
   </style>
 </head>
@@ -72,49 +81,46 @@
     <div class="navbar-title">
       <img src="https://img2.pic.in.th/pic/71f81565dc59a7f9545542493a5514ab.png" alt="โลโก้เทศบาลตำบลตันหยงมัส" class="nav-logo">
       <div class="title-text">
-        <h1>แผนที่ชุมชน</h1>
-        <span>เทศบาลตำบลตันหยงมัส</span>
+        <h1>แผนที่ชุมชน เทศบาลตำบลตันหยงมัส</h1>
       </div>
     </div>
     
-    <div class="search-container">
-      <input type="text" id="searchInput" list="searchOptions" placeholder="🔍 ค้นหาชื่อชุมชน หรือสถานที่...">
-      <datalist id="searchOptions"></datalist>
-      <button id="searchBtn">ค้นหา</button>
+    <div class="navbar-right">
+      <div class="search-container">
+        <input type="text" id="searchInput" list="searchOptions" placeholder="🔍 ค้นหาชื่อชุมชน หรือสถานที่...">
+        <datalist id="searchOptions"></datalist>
+        <button id="searchBtn">ค้นหา</button>
+      </div>
+      <button id="adminBtn" class="btn-admin">🔒 เข้าสู่ระบบแอดมิน</button>
     </div>
-
-    <button id="adminBtn" class="btn-admin">🔒 เข้าสู่ระบบแอดมิน</button>
   </div>
 
   <div id="map"></div>
 
   <script>
     const MAP_CENTER = [6.29445, 101.72362];
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzN3IxvSwJEd2Zz3zhf53R0130SCEMPm4IEmhJPRy0rmgX-QsagZMhHTP7VTUyHi0u_/exec'; // ⚠️ เปลี่ยน URL ของคุณ
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzN3IxvSwJEd2Zz3zhf53R0130SCEMPm4IEmhJPRy0rmgX-QsagZMhHTP7VTUyHi0u_/exec'; // ⚠️ อย่าลืมใส่ URL ใหม่ของคุณ
     const ADMIN_PASSWORD = "1234";
 
-    // --- 1. ตั้งค่าแผนที่ถนนและแผนที่ดาวเทียม ---
     const streetMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' });
     const satelliteMap = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 20, attribution: '© Google' });
 
     const map = L.map('map', {
       center: MAP_CENTER,
       zoom: 16,
-      layers: [streetMap] // ให้แผนที่ถนนเป็นค่าเริ่มต้น
+      layers: [streetMap] 
     });
 
-    // สร้างเมนูสลับแผนที่ (มุมล่างขวา)
     const baseMaps = {
       "🗺️ แผนที่ถนน (Street)": streetMap,
       "🛰️ แผนที่ดาวเทียม (Satellite)": satelliteMap
     };
     L.control.layers(baseMaps, null, { position: 'bottomright' }).addTo(map);
 
-    // --- ตัวแปรระบบต่างๆ ---
     const layerGroups = {}; 
     let highlightHalo = null; 
     let selectedLayer = null; 
-    let allSearchableLayers = []; // เก็บข้อมูลไว้สำหรับระบบค้นหา
+    let allSearchableLayers = []; 
 
     function resetHighlight() {
       if (highlightHalo) { map.removeLayer(highlightHalo); highlightHalo = null; }
@@ -125,18 +131,15 @@
 
     map.on('click', resetHighlight);
 
-    // 🌟 ฟังก์ชันทำการไฮไลท์และซูม (ใช้ร่วมกันทั้งตอนคลิกและตอนค้นหา)
     function triggerHighlight(layer) {
       resetHighlight();
       
-      // ถ้าเป็นหมุดสถานที่
       if (layer instanceof L.Marker) {
         map.flyTo(layer.getLatLng(), 17, { duration: 1.5 });
         layer.openPopup();
         return;
       }
 
-      // ถ้าเป็นพื้นที่หรือเส้นถนน
       selectedLayer = layer;
       const isPolygon = selectedLayer instanceof L.Polygon;
       const currentWeight = selectedLayer.defaultStyle.weight || 2;
@@ -159,7 +162,6 @@
       selectedLayer.openPopup();
     }
 
-    // --- ดึงข้อมูลจาก Google Sheets ---
     fetch(SCRIPT_URL)
       .then(response => response.json())
       .then(data => {
@@ -193,7 +195,6 @@
             
             mapLayer.bindPopup(`<div style="font-family:'Prompt'; font-size:14px; text-align:center;"><b>${item.name}</b><br><small>(${item.sheetName})</small></div>`);
 
-            // เมื่อคลิกที่แผนที่โดยตรง
             mapLayer.on('click', function(e) {
               L.DomEvent.stopPropagation(e); 
               triggerHighlight(e.target);
@@ -202,10 +203,8 @@
             if (!layerGroups[item.sheetName]) { layerGroups[item.sheetName] = L.layerGroup().addTo(map); }
             layerGroups[item.sheetName].addLayer(mapLayer);
 
-            // --- 2. นำข้อมูลไปเก็บในระบบค้นหา ---
             allSearchableLayers.push({ name: item.name, layer: mapLayer, sheetName: item.sheetName });
             
-            // สร้างตัวเลือกใน Datalist (Autocomplete)
             const option = document.createElement('option');
             option.value = item.name;
             datalist.appendChild(option);
@@ -213,25 +212,20 @@
           } catch(e) { console.error("พิกัดไม่ถูกต้องสำหรับ: " + item.name); }
         });
 
-        // สร้างกล่องเปิด-ปิดชุมชน (มุมขวาบน)
         L.control.layers(null, layerGroups, { collapsed: false, position: 'topright' }).addTo(map);
       })
       .catch(err => console.error("ไม่สามารถเชื่อมต่อฐานข้อมูลได้:", err));
 
-    // --- 3. จัดการเมื่อกดปุ่ม "ค้นหา" ---
     function executeSearch() {
       const searchValue = document.getElementById('searchInput').value.trim();
       if(!searchValue) return;
 
-      // ค้นหาชื่อที่ตรงกับที่พิมพ์
       const result = allSearchableLayers.find(item => item.name === searchValue);
       
       if (result) {
-        // ต้องแน่ใจว่าเลเยอร์นั้นถูกเปิดให้แสดงอยู่ (ถ้าปิดไว้ให้เปิดก่อน)
         if (!map.hasLayer(layerGroups[result.sheetName])) {
           map.addLayer(layerGroups[result.sheetName]);
         }
-        // สั่งทำงานซูมและไฮไลท์
         triggerHighlight(result.layer);
       } else {
         alert("ไม่พบข้อมูลชุมชน หรือสถานที่นี้ครับ");
@@ -240,12 +234,10 @@
 
     document.getElementById('searchBtn').addEventListener('click', executeSearch);
     
-    // กดปุ่ม Enter ในช่องค้นหาได้เลย
     document.getElementById('searchInput').addEventListener('keypress', function (e) {
       if (e.key === 'Enter') executeSearch();
     });
 
-    // --- ส่วนของ Admin ---
     let isAdmin = false;
     const drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
