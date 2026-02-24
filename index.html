@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ระบบแผนที่สารสนเทศ เทศบาลตำบลตันหยงมัส</title>
   
-  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -21,7 +21,7 @@
       font-family: 'Prompt', sans-serif; 
       display: flex; 
       flex-direction: column; 
-      height: 100vh; /* ให้ความสูงเต็มจอพอดี */
+      height: 100vh;
       background-color: #f4f6f9;
     }
 
@@ -29,74 +29,101 @@
     .navbar {
       background-color: #1A5276; /* สีน้ำเงินเข้ม */
       color: white;
-      padding: 12px 24px;
+      padding: 10px 24px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-      z-index: 1000; /* ให้อยู่เหนือแผนที่ */
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      z-index: 1000;
     }
 
+    /* ส่วนจัดการโลโก้และชื่อ */
     .navbar-title {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 15px; /* ระยะห่างระหว่างโลโก้กับข้อความ */
     }
 
-    .navbar-title h1 {
+    .nav-logo {
+      height: 60px; /* ปรับขนาดความสูงโลโก้ */
+      width: auto;
+      filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.3)); /* เพิ่มเงาให้โลโก้ดูมีมิติ */
+    }
+
+    .title-text {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .title-text h1 {
       margin: 0;
-      font-size: 1.4rem;
-      font-weight: 500;
+      font-size: 1.8rem; /* ขยายขนาดตัวอักษรหัวข้อให้เด่นชัด */
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.3); /* เพิ่มเงาให้ตัวหนังสือลอยเด่น */
     }
 
-    .navbar-title span {
-      font-size: 0.9rem;
-      color: #A9CCE3;
-      background: rgba(255,255,255,0.1);
-      padding: 4px 8px;
-      border-radius: 4px;
+    .title-text span {
+      font-size: 1.1rem; /* ขยายขนาดตัวอักษรชื่อเทศบาล */
+      color: #D6EAF8; /* ปรับสีให้สว่างขึ้น */
+      margin-top: 2px;
+      font-weight: 400;
     }
 
     /* ปุ่ม Admin */
     .btn-admin {
-      background-color: #F39C12; /* สีส้ม */
+      background-color: #F39C12;
       color: white;
       border: none;
-      padding: 8px 16px;
+      padding: 10px 18px;
       font-family: 'Prompt', sans-serif;
-      font-size: 0.95rem;
+      font-size: 1rem;
       border-radius: 6px;
       cursor: pointer;
       transition: all 0.3s ease;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       font-weight: 500;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
 
     .btn-admin:hover {
       background-color: #D68910;
-      transform: translateY(-1px);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
 
     .btn-admin.active {
-      background-color: #27AE60; /* เปลี่ยนเป็นสีเขียวเมื่อล็อกอินแล้ว */
+      background-color: #27AE60;
     }
 
     /* พื้นที่แผนที่ */
     #map { 
-      flex-grow: 1; /* ขยายให้เต็มพื้นที่ที่เหลือจาก Navbar */
+      flex-grow: 1; 
       width: 100%; 
       z-index: 1;
+    }
+
+    /* ปรับขนาด Navbar สำหรับมือถือ */
+    @media (max-width: 600px) {
+      .navbar { padding: 10px 15px; flex-direction: column; gap: 10px; }
+      .title-text h1 { font-size: 1.4rem; }
+      .title-text span { font-size: 0.9rem; }
+      .nav-logo { height: 50px; }
     }
   </style>
 </head>
 <body>
 
- <div class="navbar">
+  <div class="navbar">
     <div class="navbar-title">
-      <h1>📍 แผนที่ชุมชน</h1>
-      <span>เทศบาลตำบลตันหยงมัส</span>
+      <img src="https://img2.pic.in.th/pic/71f81565dc59a7f9545542493a5514ab.png" alt="โลโก้เทศบาลตำบลตันหยงมัส" class="nav-logo">
+      <div class="title-text">
+        <h1>แผนที่ชุมชน</h1>
+        <span>เทศบาลตำบลตันหยงมัส</span>
+      </div>
     </div>
     <button id="adminBtn" class="btn-admin">
       🔒 เข้าสู่ระบบแอดมิน
@@ -108,7 +135,7 @@
   <script>
     // --- ตั้งค่าเริ่มต้น ---
     const MAP_CENTER = [6.29445, 101.72362];
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzN3IxvSwJEd2Zz3zhf53R0130SCEMPm4IEmhJPRy0rmgX-QsagZMhHTP7VTUyHi0u_/exec'; 
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzN3IxvSwJEd2Zz3zhf53R0130SCEMPm4IEmhJPRy0rmgX-QsagZMhHTP7VTUyHi0u_/exec'; // ⚠️ อย่าลืมใส่ URL ใหม่
     const ADMIN_PASSWORD = "1234"; // ⚠️ เปลี่ยนรหัสผ่านของคุณตรงนี้
 
     // สร้างแผนที่
@@ -118,7 +145,7 @@
       attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    // --- ส่วนดึงข้อมูลและแสดงผล (สำหรับผู้ใช้ทั่วไป) ---
+    // --- ส่วนดึงข้อมูลและแสดงผล ---
     fetch(SCRIPT_URL)
       .then(response => response.json())
       .then(data => {
@@ -138,7 +165,7 @@
 
             } else if (item.type === 'boundary') {
               mapLayer = L.polygon(latlngs, { 
-                color: item.color || '#FF0000', weight: 2, dashArray: '5, 5', fillOpacity: 0
+                color: item.color || '#FF0000', weight: 4, dashArray: '10, 10', fillOpacity: 0
               }).addTo(map);
 
             } else if (item.type === 'polyline') {
@@ -158,12 +185,11 @@
       })
       .catch(err => console.error("ไม่สามารถเชื่อมต่อฐานข้อมูลได้:", err));
 
-    // --- ส่วนของ Admin (ซ่อนไว้เป็นค่าเริ่มต้น) ---
+    // --- ส่วนของ Admin ---
     let isAdmin = false;
     const drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
     
-    // สร้างเครื่องมือแต่ยังไม่ Add ลงแผนที่
     const drawControl = new L.Control.Draw({
       edit: { featureGroup: drawnItems },
       draw: {
@@ -179,14 +205,12 @@
         return;
       }
 
-      // แสดงหน้าต่างถามรหัสผ่าน
       const pass = prompt("กรุณาใส่รหัสผ่านสำหรับเจ้าหน้าที่ (Admin):");
       
       if (pass === ADMIN_PASSWORD) {
         isAdmin = true;
-        map.addControl(drawControl); // เปิดแสดงเครื่องมือวาดฝั่งซ้าย
+        map.addControl(drawControl); 
         
-        // เปลี่ยนสไตล์ปุ่มให้รู้ว่าเข้าระบบแล้ว
         const btn = document.getElementById('adminBtn');
         btn.innerHTML = "👨‍💻 โหมดแอดมิน (พร้อมแก้ไข)";
         btn.classList.add('active');
@@ -221,7 +245,3 @@
 
 </body>
 </html>
-
-
-
-
