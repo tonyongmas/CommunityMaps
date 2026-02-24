@@ -29,40 +29,63 @@
   <div id="map"></div>
 
   <script>
-    // 1. กำหนดจุดศูนย์กลางแผนที่ที่ตำบลตันหยงมัส
     const MAP_CENTER = [6.29445, 101.72362];
+    // นำ URL เว็บแอปของคุณมาใส่ที่นี่
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzN3IxvSwJEd2Zz3zhf53R0130SCEMPm4IEmhJPRy0rmgX-QsagZMhHTP7VTUyHi0u_/exec'; 
 
-    // 2. สร้างแผนที่
     const map = L.map('map').setView(MAP_CENTER, 14);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    // 3. ดึงข้อมูลจาก Google Sheets มาแสดง
+    // --- ส่วนดึงข้อมูลและวาดลงแผนที่ ---
     fetch(SCRIPT_URL)
       .then(response => response.json())
       .then(data => {
         data.forEach(item => {
           try {
-            // แปลงข้อความพิกัดเป็น Array และสร้างขอบเขต (Polygon)
             const latlngs = JSON.parse(item.coords);
-            const polygon = L.polygon(latlngs, { 
-              color: item.color, 
-              fillColor: item.color, 
-              fillOpacity: 0.5 
-            }).addTo(map);
+            let mapLayer;
+
+            if (item.type === 'marker') {
+              // กรณีเป็น "จุดสถานที่สำคัญ"
+              let markerOptions = {};
+              
+              // ถ้ามีการใส่ URL ไอคอนใน Google Sheet ให้สร้างไอคอนแบบ Custom
+              if (item.icon && item.icon.trim() !== "") {
+                const customIcon = L.icon({
+                  iconUrl: item.icon,
+                  iconSize: [32, 32], // ขนาดไอคอน กว้างxสูง (ปรับเปลี่ยนได้)
+                  iconAnchor: [16, 32], // จุดกึ่งกลางที่ปักลงบนแผนที่
+                  popupAnchor: [0, -32] // จุดที่หน้าต่าง Popup เด้งขึ้นมา
+                });
+                markerOptions.icon = customIcon;
+              }
+              
+              mapLayer = L.marker(latlngs, markerOptions).addTo(map);
+
+            } else if (item.type === 'polyline') {
+              // กรณีเป็น "เส้นถนน"
+              mapLayer = L.polyline(latlngs, { 
+                color: item.color, weight: 5, opacity: 0.9 
+              }).addTo(map);
+
+            } else {
+              // กรณีเป็น "พื้นที่ชุมชน" (polygon)
+              mapLayer = L.polygon(latlngs, { 
+                color: item.color, fillColor: item.color, fillOpacity: 0.4, weight: 2
+              }).addTo(map);
+            }
             
-            // ใส่ Popup แสดงชื่อชุมชนเมื่อคลิก
-            polygon.bindPopup(`<b>${item.name}</b>`);
+            mapLayer.bindPopup(`<b>${item.name}</b>`);
           } catch(e) {
-             console.error("พิกัดไม่ถูกต้องสำหรับชุมชน: " + item.name);
+             console.error("พิกัดไม่ถูกต้องสำหรับ: " + item.name);
           }
         });
       });
 
-    // 4. เพิ่มระบบวาดขอบเขต (Leaflet Draw)
+    // --- ส่วนเครื่องมือวาด ---
     const drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
     
@@ -70,27 +93,40 @@
       edit: { featureGroup: drawnItems },
       draw: {
         polygon: true,
-        polyline: false, rectangle: false, circle: false, marker: false, circlemarker: false
+        polyline: true,
+        marker: true, // เปิดใช้งานการปักหมุด (Marker)
+        rectangle: false, circle: false, circlemarker: false
       }
     });
     map.addControl(drawControl);
 
-    // 5. เมื่อวาดเสร็จ ให้แสดงหน้าต่างก๊อปปี้พิกัด
+    // --- เมื่อวาดหรือปักหมุดเสร็จ ---
     map.on(L.Draw.Event.CREATED, function (event) {
       const layer = event.layer;
-      const latlngs = layer.getLatLngs()[0];
+      const type = event.layerType; 
+      let coordsArray;
+
+      // วิธีดึงพิกัดจะต่างกันระหว่างพื้นที่, เส้น และจุด
+      if (type === 'polygon') {
+        coordsArray = layer.getLatLngs()[0].map(point => [point.lat, point.lng]);
+      } else if (type === 'polyline') {
+        coordsArray = layer.getLatLngs().map(point => [point.lat, point.lng]);
+      } else if (type === 'marker') {
+        // หมุดมีแค่จุดเดียว
+        coordsArray = [layer.getLatLng().lat, layer.getLatLng().lng];
+      }
       
-      // จัดรูปแบบพิกัดให้เป็น JSON ที่ Google Sheets อ่านได้
-      const coordsArray = latlngs.map(point => [point.lat, point.lng]);
       const coordsString = JSON.stringify(coordsArray);
       
-      // แสดงหน้าต่างให้ผู้ใช้กด Copy
-      window.prompt("ก๊อปปี้ชุดตัวเลขด้านล่างนี้ ไปวางในช่อง 'พิกัด' ใน Google Sheet นะครับ:", coordsString);
+      let typeTH = type === 'polygon' ? 'พื้นที่' : (type === 'polyline' ? 'เส้นถนน' : 'จุดสถานที่');
       
-      // วาดค้างไว้บนหน้าจอก่อนชั่วคราว
+      // แจ้งเตือนบอกผู้ใช้
+      window.prompt(`เพิ่ม ${typeTH} เสร็จแล้ว!\nก๊อปปี้พิกัดไปวางในช่อง C และพิมพ์คำว่า "${type}" ในช่อง D:`, coordsString);
+      
       drawnItems.addLayer(layer);
     });
-  </script>
+</script>
 
 </body>
 </html>
+
