@@ -6,112 +6,63 @@
   <title>ระบบแผนที่สารสนเทศ เทศบาลตำบลตันหยงมัส</title>
   
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 
   <style>
-    /* ตั้งค่าเริ่มต้นและฟอนต์ */
     body { 
-      margin: 0; 
-      padding: 0; 
-      font-family: 'Prompt', sans-serif; 
-      display: flex; 
-      flex-direction: column; 
-      height: 100vh;
-      background-color: #f4f6f9;
+      margin: 0; padding: 0; font-family: 'Prompt', sans-serif; 
+      display: flex; flex-direction: column; height: 100vh; background-color: #f4f6f9;
     }
 
-    /* แถบเมนูด้านบน (Navbar) */
+    /* Navbar */
     .navbar {
-      background-color: #1A5276; /* สีน้ำเงินเข้ม */
-      color: white;
-      padding: 10px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-      z-index: 1000;
+      background-color: #1A5276; color: white; padding: 10px 24px;
+      display: flex; justify-content: space-between; align-items: center;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 1000; flex-wrap: wrap; gap: 10px;
     }
 
-    /* ส่วนจัดการโลโก้และชื่อ */
-    .navbar-title {
-      display: flex;
-      align-items: center;
-      gap: 15px; /* ระยะห่างระหว่างโลโก้กับข้อความ */
-    }
+    .navbar-title { display: flex; align-items: center; gap: 15px; }
+    .nav-logo { height: 60px; width: auto; filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.3)); }
+    .title-text { display: flex; flex-direction: column; justify-content: center; }
+    .title-text h1 { margin: 0; font-size: 1.8rem; font-weight: 600; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
+    .title-text span { font-size: 1.1rem; color: #D6EAF8; margin-top: 2px; }
 
-    .nav-logo {
-      height: 60px; /* ปรับขนาดความสูงโลโก้ */
-      width: auto;
-      filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.3)); /* เพิ่มเงาให้โลโก้ดูมีมิติ */
+    /* ระบบค้นหา */
+    .search-container {
+      display: flex; gap: 8px; flex-grow: 1; max-width: 400px; margin: 0 20px;
     }
-
-    .title-text {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
+    .search-container input {
+      flex-grow: 1; padding: 10px 15px; border-radius: 6px; border: none;
+      font-family: 'Prompt', sans-serif; font-size: 0.95rem; outline: none;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
     }
-
-    .title-text h1 {
-      margin: 0;
-      font-size: 1.8rem; /* ขยายขนาดตัวอักษรหัวข้อให้เด่นชัด */
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      text-shadow: 1px 1px 2px rgba(0,0,0,0.3); /* เพิ่มเงาให้ตัวหนังสือลอยเด่น */
+    .search-container button {
+      background-color: #3498DB; color: white; border: none; padding: 10px 20px;
+      border-radius: 6px; cursor: pointer; font-family: 'Prompt', sans-serif; font-weight: 500;
+      transition: 0.3s;
     }
-
-    .title-text span {
-      font-size: 1.1rem; /* ขยายขนาดตัวอักษรชื่อเทศบาล */
-      color: #D6EAF8; /* ปรับสีให้สว่างขึ้น */
-      margin-top: 2px;
-      font-weight: 400;
-    }
+    .search-container button:hover { background-color: #2980B9; }
 
     /* ปุ่ม Admin */
     .btn-admin {
-      background-color: #F39C12;
-      color: white;
-      border: none;
-      padding: 10px 18px;
-      font-family: 'Prompt', sans-serif;
-      font-size: 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 500;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      background-color: #F39C12; color: white; border: none; padding: 10px 18px;
+      font-family: 'Prompt', sans-serif; font-size: 1rem; border-radius: 6px;
+      cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 8px; font-weight: 500;
     }
+    .btn-admin:hover { background-color: #D68910; transform: translateY(-2px); }
+    .btn-admin.active { background-color: #27AE60; }
 
-    .btn-admin:hover {
-      background-color: #D68910;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-    }
+    #map { flex-grow: 1; width: 100%; z-index: 1; }
 
-    .btn-admin.active {
-      background-color: #27AE60;
-    }
-
-    /* พื้นที่แผนที่ */
-    #map { 
-      flex-grow: 1; 
-      width: 100%; 
-      z-index: 1;
-    }
-
-    /* ปรับขนาด Navbar สำหรับมือถือ */
-    @media (max-width: 600px) {
-      .navbar { padding: 10px 15px; flex-direction: column; gap: 10px; }
-      .title-text h1 { font-size: 1.4rem; }
-      .title-text span { font-size: 0.9rem; }
-      .nav-logo { height: 50px; }
+    /* Responsive มือถือ */
+    @media (max-width: 850px) {
+      .navbar { flex-direction: column; align-items: stretch; }
+      .navbar-title { justify-content: center; }
+      .search-container { max-width: 100%; margin: 5px 0; }
+      .btn-admin { justify-content: center; }
     }
   </style>
 </head>
@@ -121,51 +72,99 @@
     <div class="navbar-title">
       <img src="https://img2.pic.in.th/pic/71f81565dc59a7f9545542493a5514ab.png" alt="โลโก้เทศบาลตำบลตันหยงมัส" class="nav-logo">
       <div class="title-text">
-        <h1>แผนที่ชุมชน เทศบาลตำบลตันหยงมัส</h1>
+        <h1>แผนที่ชุมชน</h1>
+        <span>เทศบาลตำบลตันหยงมัส</span>
       </div>
     </div>
-    <button id="adminBtn" class="btn-admin">
-      🔒 เข้าสู่ระบบแอดมิน
-    </button>
+    
+    <div class="search-container">
+      <input type="text" id="searchInput" list="searchOptions" placeholder="🔍 ค้นหาชื่อชุมชน หรือสถานที่...">
+      <datalist id="searchOptions"></datalist>
+      <button id="searchBtn">ค้นหา</button>
+    </div>
+
+    <button id="adminBtn" class="btn-admin">🔒 เข้าสู่ระบบแอดมิน</button>
   </div>
 
   <div id="map"></div>
 
   <script>
     const MAP_CENTER = [6.29445, 101.72362];
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzN3IxvSwJEd2Zz3zhf53R0130SCEMPm4IEmhJPRy0rmgX-QsagZMhHTP7VTUyHi0u_/exec'; // ⚠️ อย่าลืมใส่ URL ของคุณ
-    const ADMIN_PASSWORD = "1234"; 
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzN3IxvSwJEd2Zz3zhf53R0130SCEMPm4IEmhJPRy0rmgX-QsagZMhHTP7VTUyHi0u_/exec'; // ⚠️ เปลี่ยน URL ของคุณ
+    const ADMIN_PASSWORD = "1234";
 
-    const map = L.map('map').setView(MAP_CENTER, 16);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap'
-    }).addTo(map);
+    // --- 1. ตั้งค่าแผนที่ถนนและแผนที่ดาวเทียม ---
+    const streetMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' });
+    const satelliteMap = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 20, attribution: '© Google' });
 
+    const map = L.map('map', {
+      center: MAP_CENTER,
+      zoom: 16,
+      layers: [streetMap] // ให้แผนที่ถนนเป็นค่าเริ่มต้น
+    });
+
+    // สร้างเมนูสลับแผนที่ (มุมล่างขวา)
+    const baseMaps = {
+      "🗺️ แผนที่ถนน (Street)": streetMap,
+      "🛰️ แผนที่ดาวเทียม (Satellite)": satelliteMap
+    };
+    L.control.layers(baseMaps, null, { position: 'bottomright' }).addTo(map);
+
+    // --- ตัวแปรระบบต่างๆ ---
     const layerGroups = {}; 
-    
-    // 🌟 ตัวแปรเก็บสถานะการเลือก
-    let highlightHalo = null; // เก็บเลเยอร์ "ขอบขาว" ที่สร้างขึ้นมาซ้อน
-    let selectedLayer = null; // เก็บเลเยอร์ "เส้นสีเดิม" ที่ถูกคลิก
+    let highlightHalo = null; 
+    let selectedLayer = null; 
+    let allSearchableLayers = []; // เก็บข้อมูลไว้สำหรับระบบค้นหา
 
-    // 🌟 ฟังก์ชันสำหรับล้างการเลือก
     function resetHighlight() {
-      if (highlightHalo) {
-        map.removeLayer(highlightHalo); // ลบขอบขาวทิ้ง
-        highlightHalo = null;
-      }
-      if (selectedLayer) {
-        selectedLayer.setStyle(selectedLayer.defaultStyle); // คืนค่าความโปร่งใสเดิม
-        selectedLayer = null;
+      if (highlightHalo) { map.removeLayer(highlightHalo); highlightHalo = null; }
+      if (selectedLayer && selectedLayer.defaultStyle) { 
+        selectedLayer.setStyle(selectedLayer.defaultStyle); selectedLayer = null; 
       }
     }
 
-    // เมื่อคลิกที่พื้นแผนที่ว่างๆ ให้ยกเลิกการเลือก
     map.on('click', resetHighlight);
 
+    // 🌟 ฟังก์ชันทำการไฮไลท์และซูม (ใช้ร่วมกันทั้งตอนคลิกและตอนค้นหา)
+    function triggerHighlight(layer) {
+      resetHighlight();
+      
+      // ถ้าเป็นหมุดสถานที่
+      if (layer instanceof L.Marker) {
+        map.flyTo(layer.getLatLng(), 17, { duration: 1.5 });
+        layer.openPopup();
+        return;
+      }
+
+      // ถ้าเป็นพื้นที่หรือเส้นถนน
+      selectedLayer = layer;
+      const isPolygon = selectedLayer instanceof L.Polygon;
+      const currentWeight = selectedLayer.defaultStyle.weight || 2;
+
+      const haloStyle = { color: '#FFFFFF', weight: currentWeight + 6, opacity: 1, fill: false, dashArray: '' };
+
+      if (isPolygon) highlightHalo = L.polygon(selectedLayer.getLatLngs(), haloStyle).addTo(map);
+      else highlightHalo = L.polyline(selectedLayer.getLatLngs(), haloStyle).addTo(map);
+
+      if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+        highlightHalo.bringToFront();
+        selectedLayer.bringToFront();
+      }
+
+      if (selectedLayer.defaultStyle.fillOpacity > 0) {
+        selectedLayer.setStyle({ fillOpacity: 0.6 });
+      }
+
+      map.flyToBounds(selectedLayer.getBounds(), { padding: [50, 50], duration: 1.5 });
+      selectedLayer.openPopup();
+    }
+
+    // --- ดึงข้อมูลจาก Google Sheets ---
     fetch(SCRIPT_URL)
       .then(response => response.json())
       .then(data => {
+        const datalist = document.getElementById('searchOptions');
+
         data.forEach(item => {
           try {
             const latlngs = JSON.parse(item.coords);
@@ -175,17 +174,9 @@
             if (item.type === 'marker') {
               let markerOptions = {};
               if (item.icon && item.icon.trim() !== "") {
-                markerOptions.icon = L.icon({
-                  iconUrl: item.icon, iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32]
-                });
+                markerOptions.icon = L.icon({ iconUrl: item.icon, iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
               }
               mapLayer = L.marker(latlngs, markerOptions);
-              
-              mapLayer.on('click', function(e) {
-                resetHighlight(); 
-                map.flyTo(e.latlng, 17, { duration: 1.5 }); 
-              });
-
             } else {
               if (item.type === 'boundary') {
                 defaultStyle = { color: item.color || '#FF0000', weight: 4, dashArray: '10, 10', fillOpacity: 0 };
@@ -197,66 +188,62 @@
                 defaultStyle = { color: item.color, fillColor: item.color, fillOpacity: 0.4, weight: 2 };
                 mapLayer = L.polygon(latlngs, defaultStyle);
               }
-
-              // บันทึกสไตล์เริ่มต้นเก็บไว้
               mapLayer.defaultStyle = defaultStyle;
-
-              // 🌟 เหตุการณ์เมื่อคลิกเส้น หรือ พื้นที่
-              mapLayer.on('click', function(e) {
-                L.DomEvent.stopPropagation(e); 
-                resetHighlight(); // ล้างอันเก่าออกก่อน
-
-                selectedLayer = e.target;
-                const isPolygon = selectedLayer instanceof L.Polygon; // เช็คว่าเป็นพื้นที่หรือเส้นถนน
-                const currentWeight = selectedLayer.defaultStyle.weight || 2;
-
-                // 1. สร้างสไตล์สำหรับ "ขอบขาว"
-                const haloStyle = {
-                  color: '#FFFFFF',          // สีขาว
-                  weight: currentWeight + 6, // บวกความหนาเพิ่มจากเส้นเดิม เพื่อให้ล้นออกมาเป็นขอบ
-                  opacity: 1,
-                  fill: false,               // ไม่เติมสีพื้นหลัง
-                  dashArray: ''              // บังคับให้ขอบขาวเป็นเส้นทึบเสมอ
-                };
-
-                // 2. วาดขอบขาวลงไปบนแผนที่
-                if (isPolygon) {
-                  highlightHalo = L.polygon(selectedLayer.getLatLngs(), haloStyle).addTo(map);
-                } else {
-                  highlightHalo = L.polyline(selectedLayer.getLatLngs(), haloStyle).addTo(map);
-                }
-
-                // 3. จัดลำดับชั้น (Z-Index) เพื่อให้เส้นสีเดิมทับอยู่บนขอบขาว
-                if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-                  highlightHalo.bringToFront();   // ดึงขอบขาวมาไว้หน้าสุดก่อน
-                  selectedLayer.bringToFront();   // ดึงเส้นสีเดิมมาทับขอบขาวอีกที
-                }
-
-                // 4. ถ้าเป็นพื้นที่ (Polygon) ทำให้สีพื้นหลังเข้มขึ้นนิดนึงให้ดูเด่น
-                if (selectedLayer.defaultStyle.fillOpacity > 0) {
-                  selectedLayer.setStyle({ fillOpacity: 0.6 });
-                }
-
-                // 5. ซูมเข้าไปหา
-                map.flyToBounds(selectedLayer.getBounds(), { padding: [50, 50], duration: 1.5 });
-              });
             }
             
             mapLayer.bindPopup(`<div style="font-family:'Prompt'; font-size:14px; text-align:center;"><b>${item.name}</b><br><small>(${item.sheetName})</small></div>`);
 
-            if (!layerGroups[item.sheetName]) {
-              layerGroups[item.sheetName] = L.layerGroup().addTo(map);
-            }
+            // เมื่อคลิกที่แผนที่โดยตรง
+            mapLayer.on('click', function(e) {
+              L.DomEvent.stopPropagation(e); 
+              triggerHighlight(e.target);
+            });
+
+            if (!layerGroups[item.sheetName]) { layerGroups[item.sheetName] = L.layerGroup().addTo(map); }
             layerGroups[item.sheetName].addLayer(mapLayer);
 
-          } catch(e) {
-             console.error("พิกัดไม่ถูกต้องสำหรับ: " + item.name);
-          }
+            // --- 2. นำข้อมูลไปเก็บในระบบค้นหา ---
+            allSearchableLayers.push({ name: item.name, layer: mapLayer, sheetName: item.sheetName });
+            
+            // สร้างตัวเลือกใน Datalist (Autocomplete)
+            const option = document.createElement('option');
+            option.value = item.name;
+            datalist.appendChild(option);
+
+          } catch(e) { console.error("พิกัดไม่ถูกต้องสำหรับ: " + item.name); }
         });
 
-        L.control.layers(null, layerGroups, { collapsed: false }).addTo(map);
+        // สร้างกล่องเปิด-ปิดชุมชน (มุมขวาบน)
+        L.control.layers(null, layerGroups, { collapsed: false, position: 'topright' }).addTo(map);
       })
       .catch(err => console.error("ไม่สามารถเชื่อมต่อฐานข้อมูลได้:", err));
+
+    // --- 3. จัดการเมื่อกดปุ่ม "ค้นหา" ---
+    function executeSearch() {
+      const searchValue = document.getElementById('searchInput').value.trim();
+      if(!searchValue) return;
+
+      // ค้นหาชื่อที่ตรงกับที่พิมพ์
+      const result = allSearchableLayers.find(item => item.name === searchValue);
+      
+      if (result) {
+        // ต้องแน่ใจว่าเลเยอร์นั้นถูกเปิดให้แสดงอยู่ (ถ้าปิดไว้ให้เปิดก่อน)
+        if (!map.hasLayer(layerGroups[result.sheetName])) {
+          map.addLayer(layerGroups[result.sheetName]);
+        }
+        // สั่งทำงานซูมและไฮไลท์
+        triggerHighlight(result.layer);
+      } else {
+        alert("ไม่พบข้อมูลชุมชน หรือสถานที่นี้ครับ");
+      }
+    }
+
+    document.getElementById('searchBtn').addEventListener('click', executeSearch);
+    
+    // กดปุ่ม Enter ในช่องค้นหาได้เลย
+    document.getElementById('searchInput').addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') executeSearch();
+    });
 
     // --- ส่วนของ Admin ---
     let isAdmin = false;
@@ -265,46 +252,28 @@
     
     const drawControl = new L.Control.Draw({
       edit: { featureGroup: drawnItems },
-      draw: {
-        polygon: true, polyline: true, marker: true,
-        rectangle: false, circle: false, circlemarker: false
-      }
+      draw: { polygon: true, polyline: true, marker: true, rectangle: false, circle: false, circlemarker: false }
     });
 
     document.getElementById('adminBtn').addEventListener('click', () => {
-      if (isAdmin) {
-        alert("คุณอยู่ในโหมดแอดมินแล้ว");
-        return;
-      }
-
+      if (isAdmin) { alert("คุณอยู่ในโหมดแอดมินแล้ว"); return; }
       const pass = prompt("กรุณาใส่รหัสผ่านสำหรับเจ้าหน้าที่ (Admin):");
       
       if (pass === ADMIN_PASSWORD) {
         isAdmin = true;
         map.addControl(drawControl); 
-        
         const btn = document.getElementById('adminBtn');
         btn.innerHTML = "👨‍💻 โหมดแอดมิน (พร้อมแก้ไข)";
         btn.classList.add('active');
-        
         alert("เข้าสู่ระบบแอดมินสำเร็จ!");
-      } else if (pass !== null) {
-        alert("รหัสผ่านไม่ถูกต้อง!");
-      }
+      } else if (pass !== null) { alert("รหัสผ่านไม่ถูกต้อง!"); }
     });
 
     map.on(L.Draw.Event.CREATED, function (event) {
-      const layer = event.layer;
-      const type = event.layerType; 
-      let coordsArray;
-
-      if (type === 'polygon') {
-        coordsArray = layer.getLatLngs()[0].map(point => [point.lat, point.lng]);
-      } else if (type === 'polyline') {
-        coordsArray = layer.getLatLngs().map(point => [point.lat, point.lng]);
-      } else if (type === 'marker') {
-        coordsArray = [layer.getLatLng().lat, layer.getLatLng().lng];
-      }
+      const layer = event.layer; const type = event.layerType; let coordsArray;
+      if (type === 'polygon') coordsArray = layer.getLatLngs()[0].map(point => [point.lat, point.lng]);
+      else if (type === 'polyline') coordsArray = layer.getLatLngs().map(point => [point.lat, point.lng]);
+      else if (type === 'marker') coordsArray = [layer.getLatLng().lat, layer.getLatLng().lng];
       
       const coordsString = JSON.stringify(coordsArray);
       let typeTH = type === 'polygon' ? 'พื้นที่' : (type === 'polyline' ? 'เส้นถนน' : 'จุดสถานที่');
@@ -315,7 +284,3 @@
   </script>
 </body>
 </html>
-
-
-
-
