@@ -3,37 +3,92 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Custom App</title>
+  <title>แผนที่ชุมชน เทศบาลตำบลตันหยงมัส</title>
+  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+
   <style>
-    body { font-family: sans-serif; text-align: center; padding: 50px; }
-    button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
-    #result { margin-top: 20px; color: green; font-weight: bold; }
+    body { margin: 0; padding: 0; }
+    #map { width: 100vw; height: 100vh; } /* ให้แผนที่เต็มจอ */
+    .title-box {
+      position: absolute; top: 10px; left: 50px; z-index: 1000;
+      background: white; padding: 10px 20px; border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3); font-family: sans-serif;
+    }
   </style>
 </head>
 <body>
 
-  <h1>แอปพลิเคชันของฉัน (GitHub Pages + GAS)</h1>
-  <button id="fetchBtn">ดึงข้อมูลจาก Backend</button>
-  <p id="result">ผลลัพธ์จะแสดงที่นี่...</p>
+  <div class="title-box">
+    <h3>แผนที่ชุมชน เทศบาลตำบลตันหยงมัส</h3>
+  </div>
+  <div id="map"></div>
 
   <script>
-    // นำ URL ที่ได้จาก Google Apps Script มาวางที่นี่
-    const scriptUrl = 'https://script.google.com/macros/s/AKfycbzN3IxvSwJEd2Zz3zhf53R0130SCEMPm4IEmhJPRy0rmgX-QsagZMhHTP7VTUyHi0u_/exec'; 
+    // 1. กำหนดจุดศูนย์กลางแผนที่ที่ตำบลตันหยงมัส
+    const MAP_CENTER = [6.29445, 101.72362];
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzN3IxvSwJEd2Zz3zhf53R0130SCEMPm4IEmhJPRy0rmgX-QsagZMhHTP7VTUyHi0u_/exec'; 
 
-    document.getElementById('fetchBtn').addEventListener('click', () => {
-      document.getElementById('result').innerText = "กำลังโหลด...";
+    // 2. สร้างแผนที่
+    const map = L.map('map').setView(MAP_CENTER, 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
 
-      fetch(scriptUrl)
-        .then(response => response.json())
-        .then(data => {
-          console.log("ข้อมูลที่ได้:", data);
-          document.getElementById('result').innerText = data.message;
-        })
-        .catch(error => {
-          console.error('Error:', error);
-          document.getElementById('result').innerText = "เกิดข้อผิดพลาดในการเชื่อมต่อ";
-          document.getElementById('result').style.color = "red";
+    // 3. ดึงข้อมูลจาก Google Sheets มาแสดง
+    fetch(SCRIPT_URL)
+      .then(response => response.json())
+      .then(data => {
+        data.forEach(item => {
+          try {
+            // แปลงข้อความพิกัดเป็น Array และสร้างขอบเขต (Polygon)
+            const latlngs = JSON.parse(item.coords);
+            const polygon = L.polygon(latlngs, { 
+              color: item.color, 
+              fillColor: item.color, 
+              fillOpacity: 0.5 
+            }).addTo(map);
+            
+            // ใส่ Popup แสดงชื่อชุมชนเมื่อคลิก
+            polygon.bindPopup(`<b>${item.name}</b>`);
+          } catch(e) {
+             console.error("พิกัดไม่ถูกต้องสำหรับชุมชน: " + item.name);
+          }
         });
+      });
+
+    // 4. เพิ่มระบบวาดขอบเขต (Leaflet Draw)
+    const drawnItems = new L.FeatureGroup();
+    map.addLayer(drawnItems);
+    
+    const drawControl = new L.Control.Draw({
+      edit: { featureGroup: drawnItems },
+      draw: {
+        polygon: true,
+        polyline: false, rectangle: false, circle: false, marker: false, circlemarker: false
+      }
+    });
+    map.addControl(drawControl);
+
+    // 5. เมื่อวาดเสร็จ ให้แสดงหน้าต่างก๊อปปี้พิกัด
+    map.on(L.Draw.Event.CREATED, function (event) {
+      const layer = event.layer;
+      const latlngs = layer.getLatLngs()[0];
+      
+      // จัดรูปแบบพิกัดให้เป็น JSON ที่ Google Sheets อ่านได้
+      const coordsArray = latlngs.map(point => [point.lat, point.lng]);
+      const coordsString = JSON.stringify(coordsArray);
+      
+      // แสดงหน้าต่างให้ผู้ใช้กด Copy
+      window.prompt("ก๊อปปี้ชุดตัวเลขด้านล่างนี้ ไปวางในช่อง 'พิกัด' ใน Google Sheet นะครับ:", coordsString);
+      
+      // วาดค้างไว้บนหน้าจอก่อนชั่วคราว
+      drawnItems.addLayer(layer);
     });
   </script>
 
