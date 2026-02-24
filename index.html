@@ -133,17 +133,30 @@
 
   <script>
     const MAP_CENTER = [6.29445, 101.72362];
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzN3IxvSwJEd2Zz3zhf53R0130SCEMPm4IEmhJPRy0rmgX-QsagZMhHTP7VTUyHi0u_/exec'; // ⚠️ ใส่ URL ใหม่ที่ได้จากข้อ 2
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzN3IxvSwJEd2Zz3zhf53R0130SCEMPm4IEmhJPRy0rmgX-QsagZMhHTP7VTUyHi0u_/exec'; // ⚠️ อย่าลืมใส่ URL ของคุณ
     const ADMIN_PASSWORD = "1234"; 
 
-    const map = L.map('map').setView(MAP_CENTER, 16);
+    const map = L.map('map').setView(MAP_CENTER, 14);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    // สร้าง Object ไว้เก็บกลุ่มของแผนที่แยกตามชื่อชีต
     const layerGroups = {}; 
+    
+    // 🌟 ตัวแปรเก็บเลเยอร์ที่กำลังถูกเลือก (ไฮไลท์) อยู่
+    let highlightedLayer = null;
+
+    // 🌟 ฟังก์ชันสำหรับยกเลิกการไฮไลท์ (กลับไปเป็นสีเดิม)
+    function resetHighlight() {
+      if (highlightedLayer) {
+        highlightedLayer.setStyle(highlightedLayer.defaultStyle);
+        highlightedLayer = null;
+      }
+    }
+
+    // 🌟 เมื่อคลิกที่พื้นแผนที่ว่างๆ ให้ยกเลิกการไฮไลท์
+    map.on('click', resetHighlight);
 
     fetch(SCRIPT_URL)
       .then(response => response.json())
@@ -152,6 +165,7 @@
           try {
             const latlngs = JSON.parse(item.coords);
             let mapLayer;
+            let defaultStyle = {}; // เก็บสไตล์เริ่มต้นไว้
 
             if (item.type === 'marker') {
               let markerOptions = {};
@@ -161,29 +175,61 @@
                 });
               }
               mapLayer = L.marker(latlngs, markerOptions);
-
-            } else if (item.type === 'boundary') {
-              mapLayer = L.polygon(latlngs, { 
-                color: item.color || '#FF0000', weight: 4, dashArray: '10, 10', fillOpacity: 0
+              
+              // เมื่อคลิกหมุด ให้ซูมเข้าไปหา
+              mapLayer.on('click', function(e) {
+                resetHighlight(); 
+                map.flyTo(e.latlng, 17, { duration: 1.5 }); 
               });
 
-            } else if (item.type === 'polyline') {
-              mapLayer = L.polyline(latlngs, { color: item.color, weight: 5, opacity: 0.9 });
-
             } else {
-              mapLayer = L.polygon(latlngs, { 
-                color: item.color, fillColor: item.color, fillOpacity: 0.4, weight: 2
+              // กำหนดสไตล์เริ่มต้นตามประเภท
+              if (item.type === 'boundary') {
+                defaultStyle = { color: item.color || '#FF0000', weight: 4, dashArray: '10, 10', fillOpacity: 0 };
+                mapLayer = L.polygon(latlngs, defaultStyle);
+              } else if (item.type === 'polyline') {
+                defaultStyle = { color: item.color, weight: 5, opacity: 0.9 };
+                mapLayer = L.polyline(latlngs, defaultStyle);
+              } else {
+                defaultStyle = { color: item.color, fillColor: item.color, fillOpacity: 0.4, weight: 2 };
+                mapLayer = L.polygon(latlngs, defaultStyle);
+              }
+
+              // 🌟 บันทึกสไตล์เริ่มต้นเก็บไว้ในตัวแปรของ Layer
+              mapLayer.defaultStyle = defaultStyle;
+
+              // 🌟 เหตุการณ์เมื่อคลิกที่พื้นที่ หรือ เส้นถนน
+              mapLayer.on('click', function(e) {
+                L.DomEvent.stopPropagation(e); // ป้องกันไม่ให้ทะลุไปโดน map.on('click')
+                resetHighlight(); // ล้างไฮไลท์อันเก่าออกก่อน
+
+                highlightedLayer = e.target;
+                
+                // กำหนดสไตล์ใหม่เป็น "ขอบขาวเด่นๆ"
+                highlightedLayer.setStyle({
+                  color: '#FFFFFF', // ขอบสีขาว
+                  weight: 6,        // เส้นหนาขึ้น
+                  opacity: 1,
+                  dashArray: '',    // ยกเลิกเส้นประชั่วคราวให้ดูทึบ
+                  fillOpacity: highlightedLayer.defaultStyle.fillOpacity > 0 ? 0.6 : 0 // พื้นสีเข้มขึ้นนิดนึง
+                });
+
+                // ดึงเลเยอร์มาไว้บนสุด จะได้ไม่โดนเส้นอื่นทับ
+                if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                  highlightedLayer.bringToFront();
+                }
+
+                // 🌟 ซูมและเลื่อนแผนที่ไปหาพื้นที่นั้นแบบสมูท (Smooth zoom)
+                map.flyToBounds(highlightedLayer.getBounds(), { padding: [50, 50], duration: 1.5 });
               });
             }
             
             mapLayer.bindPopup(`<div style="font-family:'Prompt'; font-size:14px; text-align:center;"><b>${item.name}</b><br><small>(${item.sheetName})</small></div>`);
 
-            // --- ระบบจัดกลุ่มเลเยอร์ตามชื่อชีต ---
-            // ถ้ายังไม่มีกลุ่มของชีตนี้ ให้สร้างขึ้นมาใหม่แล้ว Add ลงแผนที่
+            // จัดกลุ่มเลเยอร์ตามชื่อชีต
             if (!layerGroups[item.sheetName]) {
               layerGroups[item.sheetName] = L.layerGroup().addTo(map);
             }
-            // นำข้อมูลเพิ่มเข้าไปในกลุ่มชีตนั้นๆ
             layerGroups[item.sheetName].addLayer(mapLayer);
 
           } catch(e) {
@@ -191,7 +237,6 @@
           }
         });
 
-        // สร้างกล่องควบคุมเลเยอร์ (มุมขวาบน)
         L.control.layers(null, layerGroups, { collapsed: false }).addTo(map);
       })
       .catch(err => console.error("ไม่สามารถเชื่อมต่อฐานข้อมูลได้:", err));
@@ -251,8 +296,8 @@
       drawnItems.addLayer(layer);
     });
   </script>
-
 </body>
 </html>
+
 
 
