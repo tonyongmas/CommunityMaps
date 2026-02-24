@@ -28,7 +28,7 @@
   </div>
   <div id="map"></div>
 
-  <script>
+ <script>
     const MAP_CENTER = [6.29445, 101.72362];
     // นำ URL เว็บแอปของคุณมาใส่ที่นี่
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzN3IxvSwJEd2Zz3zhf53R0130SCEMPm4IEmhJPRy0rmgX-QsagZMhHTP7VTUyHi0u_/exec'; 
@@ -49,30 +49,33 @@
             let mapLayer;
 
             if (item.type === 'marker') {
-              // กรณีเป็น "จุดสถานที่สำคัญ"
+              // 1. กรณีเป็น "จุดสถานที่สำคัญ"
               let markerOptions = {};
-              
-              // ถ้ามีการใส่ URL ไอคอนใน Google Sheet ให้สร้างไอคอนแบบ Custom
               if (item.icon && item.icon.trim() !== "") {
-                const customIcon = L.icon({
+                markerOptions.icon = L.icon({
                   iconUrl: item.icon,
-                  iconSize: [32, 32], // ขนาดไอคอน กว้างxสูง (ปรับเปลี่ยนได้)
-                  iconAnchor: [16, 32], // จุดกึ่งกลางที่ปักลงบนแผนที่
-                  popupAnchor: [0, -32] // จุดที่หน้าต่าง Popup เด้งขึ้นมา
+                  iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32]
                 });
-                markerOptions.icon = customIcon;
               }
-              
               mapLayer = L.marker(latlngs, markerOptions).addTo(map);
 
+            } else if (item.type === 'boundary') {
+              // 2. กรณีเป็น "เส้นขอบเขตเทศบาล" (เพิ่มใหม่: เส้นประ ไม่มีสีพื้นหลัง)
+              mapLayer = L.polygon(latlngs, { 
+                color: item.color || '#FF0000', // สีเส้นขอบ (ถ้าไม่ใส่สีใน Sheet จะเป็นสีแดง)
+                weight: 4,                      // ความหนาของเส้น
+                dashArray: '10, 10',            // สร้างเส้นประ (ตัวเลขแรกคือความยาวเส้น, ตัวเลขหลังคือช่องว่าง)
+                fillOpacity: 0                  // ทำให้พื้นที่ข้างในโปร่งใส 100% (เห็นแต่เส้นขอบ)
+              }).addTo(map);
+
             } else if (item.type === 'polyline') {
-              // กรณีเป็น "เส้นถนน"
+              // 3. กรณีเป็น "เส้นถนน"
               mapLayer = L.polyline(latlngs, { 
                 color: item.color, weight: 5, opacity: 0.9 
               }).addTo(map);
 
             } else {
-              // กรณีเป็น "พื้นที่ชุมชน" (polygon)
+              // 4. กรณีเป็น "พื้นที่ชุมชน" (polygon ทั่วไป)
               mapLayer = L.polygon(latlngs, { 
                 color: item.color, fillColor: item.color, fillOpacity: 0.4, weight: 2
               }).addTo(map);
@@ -92,41 +95,34 @@
     const drawControl = new L.Control.Draw({
       edit: { featureGroup: drawnItems },
       draw: {
-        polygon: true,
-        polyline: true,
-        marker: true, // เปิดใช้งานการปักหมุด (Marker)
+        polygon: true, polyline: true, marker: true,
         rectangle: false, circle: false, circlemarker: false
       }
     });
     map.addControl(drawControl);
 
-    // --- เมื่อวาดหรือปักหมุดเสร็จ ---
+    // --- เมื่อวาดเสร็จ ---
     map.on(L.Draw.Event.CREATED, function (event) {
       const layer = event.layer;
       const type = event.layerType; 
       let coordsArray;
 
-      // วิธีดึงพิกัดจะต่างกันระหว่างพื้นที่, เส้น และจุด
       if (type === 'polygon') {
         coordsArray = layer.getLatLngs()[0].map(point => [point.lat, point.lng]);
       } else if (type === 'polyline') {
         coordsArray = layer.getLatLngs().map(point => [point.lat, point.lng]);
       } else if (type === 'marker') {
-        // หมุดมีแค่จุดเดียว
         coordsArray = [layer.getLatLng().lat, layer.getLatLng().lng];
       }
       
       const coordsString = JSON.stringify(coordsArray);
-      
       let typeTH = type === 'polygon' ? 'พื้นที่' : (type === 'polyline' ? 'เส้นถนน' : 'จุดสถานที่');
       
-      // แจ้งเตือนบอกผู้ใช้
-      window.prompt(`เพิ่ม ${typeTH} เสร็จแล้ว!\nก๊อปปี้พิกัดไปวางในช่อง C และพิมพ์คำว่า "${type}" ในช่อง D:`, coordsString);
-      
+      window.prompt(`เพิ่ม ${typeTH} เสร็จแล้ว!\nก๊อปปี้พิกัดไปวางในช่อง C\n(หากเป็นขอบเขตเทศบาล ให้พิมพ์คำว่า "boundary" ในช่อง D)`, coordsString);
       drawnItems.addLayer(layer);
     });
 </script>
-
 </body>
 </html>
+
 
