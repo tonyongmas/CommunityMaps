@@ -133,19 +133,19 @@
   <div id="map"></div>
 
   <script>
-    // --- ตั้งค่าเริ่มต้น ---
     const MAP_CENTER = [6.29445, 101.72362];
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzN3IxvSwJEd2Zz3zhf53R0130SCEMPm4IEmhJPRy0rmgX-QsagZMhHTP7VTUyHi0u_/exec'; // ⚠️ อย่าลืมใส่ URL ใหม่
-    const ADMIN_PASSWORD = "1234"; // ⚠️ เปลี่ยนรหัสผ่านของคุณตรงนี้
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzN3IxvSwJEd2Zz3zhf53R0130SCEMPm4IEmhJPRy0rmgX-QsagZMhHTP7VTUyHi0u_/exec'; // ⚠️ ใส่ URL ใหม่ที่ได้จากข้อ 2
+    const ADMIN_PASSWORD = "1234"; 
 
-    // สร้างแผนที่
-    const map = L.map('map').setView(MAP_CENTER, 14);
+    const map = L.map('map').setView(MAP_CENTER, 16);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    // --- ส่วนดึงข้อมูลและแสดงผล ---
+    // สร้าง Object ไว้เก็บกลุ่มของแผนที่แยกตามชื่อชีต
+    const layerGroups = {}; 
+
     fetch(SCRIPT_URL)
       .then(response => response.json())
       .then(data => {
@@ -161,27 +161,39 @@
                   iconUrl: item.icon, iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32]
                 });
               }
-              mapLayer = L.marker(latlngs, markerOptions).addTo(map);
+              mapLayer = L.marker(latlngs, markerOptions);
 
             } else if (item.type === 'boundary') {
               mapLayer = L.polygon(latlngs, { 
                 color: item.color || '#FF0000', weight: 4, dashArray: '10, 10', fillOpacity: 0
-              }).addTo(map);
+              });
 
             } else if (item.type === 'polyline') {
-              mapLayer = L.polyline(latlngs, { color: item.color, weight: 5, opacity: 0.9 }).addTo(map);
+              mapLayer = L.polyline(latlngs, { color: item.color, weight: 5, opacity: 0.9 });
 
             } else {
               mapLayer = L.polygon(latlngs, { 
                 color: item.color, fillColor: item.color, fillOpacity: 0.4, weight: 2
-              }).addTo(map);
+              });
             }
             
-            mapLayer.bindPopup(`<div style="font-family:'Prompt'; font-size:14px; text-align:center;"><b>${item.name}</b></div>`);
+            mapLayer.bindPopup(`<div style="font-family:'Prompt'; font-size:14px; text-align:center;"><b>${item.name}</b><br><small>(${item.sheetName})</small></div>`);
+
+            // --- ระบบจัดกลุ่มเลเยอร์ตามชื่อชีต ---
+            // ถ้ายังไม่มีกลุ่มของชีตนี้ ให้สร้างขึ้นมาใหม่แล้ว Add ลงแผนที่
+            if (!layerGroups[item.sheetName]) {
+              layerGroups[item.sheetName] = L.layerGroup().addTo(map);
+            }
+            // นำข้อมูลเพิ่มเข้าไปในกลุ่มชีตนั้นๆ
+            layerGroups[item.sheetName].addLayer(mapLayer);
+
           } catch(e) {
              console.error("พิกัดไม่ถูกต้องสำหรับ: " + item.name);
           }
         });
+
+        // สร้างกล่องควบคุมเลเยอร์ (มุมขวาบน)
+        L.control.layers(null, layerGroups, { collapsed: false }).addTo(map);
       })
       .catch(err => console.error("ไม่สามารถเชื่อมต่อฐานข้อมูลได้:", err));
 
@@ -198,10 +210,9 @@
       }
     });
 
-    // จัดการเมื่อกดปุ่ม Admin
     document.getElementById('adminBtn').addEventListener('click', () => {
       if (isAdmin) {
-        alert("คุณอยู่ในโหมดแอดมินแล้ว สามารถใช้งานเครื่องมือวาดแผนที่ได้เลยครับ");
+        alert("คุณอยู่ในโหมดแอดมินแล้ว");
         return;
       }
 
@@ -215,13 +226,12 @@
         btn.innerHTML = "👨‍💻 โหมดแอดมิน (พร้อมแก้ไข)";
         btn.classList.add('active');
         
-        alert("เข้าสู่ระบบแอดมินสำเร็จ! เครื่องมือวาดแผนที่ปรากฏขึ้นที่มุมซ้ายบนแล้ว");
+        alert("เข้าสู่ระบบแอดมินสำเร็จ!");
       } else if (pass !== null) {
         alert("รหัสผ่านไม่ถูกต้อง!");
       }
     });
 
-    // --- จัดการพิกัดเมื่อแอดมินวาดเสร็จ ---
     map.on(L.Draw.Event.CREATED, function (event) {
       const layer = event.layer;
       const type = event.layerType; 
@@ -238,10 +248,11 @@
       const coordsString = JSON.stringify(coordsArray);
       let typeTH = type === 'polygon' ? 'พื้นที่' : (type === 'polyline' ? 'เส้นถนน' : 'จุดสถานที่');
       
-      window.prompt(`เพิ่ม ${typeTH} เสร็จแล้ว!\nก๊อปปี้พิกัดไปวางในช่อง C\n(หากเป็นขอบเขตเทศบาล ให้พิมพ์คำว่า "boundary" ในช่อง D)`, coordsString);
+      window.prompt(`เพิ่ม ${typeTH} เสร็จแล้ว!\nก๊อปปี้พิกัดไปวางในช่อง C ของชีตชุมชนที่ต้องการ\n(ใส่ประเภทในช่อง D ให้ถูกต้องด้วยนะครับ)`, coordsString);
       drawnItems.addLayer(layer);
     });
   </script>
 
 </body>
 </html>
+
