@@ -181,10 +181,10 @@
               mapLayer = L.marker(latlngs, markerOptions);
             } else {
               if (item.type === 'boundary') {
-                defaultStyle = { color: item.color || '#FF0000', weight: 4, dashArray: '10, 10', fillOpacity: 0 };
+                defaultStyle = { color: item.color || '#FF0000', weight: 2, dashArray: '5, 10', fillOpacity: 0 };
                 mapLayer = L.polygon(latlngs, defaultStyle);
               } else if (item.type === 'polyline') {
-                defaultStyle = { color: item.color, weight: 5, opacity: 0.9 };
+                defaultStyle = { color: item.color, weight: 8, opacity: 0.9 };
                 mapLayer = L.polyline(latlngs, defaultStyle);
               } else {
                 defaultStyle = { color: item.color, fillColor: item.color, fillOpacity: 0.4, weight: 2 };
@@ -276,3 +276,4 @@
   </script>
 </body>
 </html>
+
