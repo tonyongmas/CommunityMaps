@@ -160,7 +160,11 @@
         selectedLayer.setStyle({ fillOpacity: 0.6 });
       }
 
-      map.flyToBounds(selectedLayer.getBounds(), { padding: [50, 50], duration: 1.5 });
+      map.flyToBounds(selectedLayer.getBounds(), { 
+        padding: [80, 80],  // เพิ่มตัวเลขให้มากขึ้น (เช่น [100, 100]) ถ้าอยากให้ซูมออกมาดูกว้างขึ้น
+        maxZoom: 15,        // ล็อกไม่ให้ซูมใกล้เกินระดับ 16 (ตัวเลขยิ่งเยอะ ยิ่งซูมใกล้ ปรับได้ระหว่าง 1-19)
+        duration: 1.8       // ความเร็วในการซูม (วินาที)
+    });
       selectedLayer.openPopup();
     }
 
@@ -278,6 +282,7 @@
   </script>
 </body>
 </html>
+
 
 
 
