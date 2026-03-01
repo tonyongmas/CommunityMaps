@@ -6,22 +6,25 @@
   <title>ระบบแผนที่สารสนเทศ เทศบาลตำบลตันหยงมัส</title>
   
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <style>
     body { 
       margin: 0; padding: 0; font-family: 'Prompt', sans-serif; 
-      display: flex; flex-direction: column; height: 100vh; background-color: #f4f6f9;
+      display: flex; flex-direction: column; height: 100vh; background-color: #f4f6f9; overflow: hidden;
     }
 
     /* Navbar */
     .navbar {
       background-color: #1A5276; color: white; padding: 10px 24px;
       display: flex; justify-content: space-between; align-items: center;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 1000;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 1001;
     }
 
     .navbar-title { display: flex; align-items: center; gap: 15px; }
@@ -30,48 +33,90 @@
     .title-text h1 { margin: 0; font-size: 1.8rem; font-weight: 600; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
     .title-text span { font-size: 1.1rem; color: #D6EAF8; margin-top: 2px; }
 
-    /* กลุ่มเมนูด้านขวา (ค้นหา + ปุ่ม Admin) */
-    .navbar-right {
-      display: flex;
-      align-items: center;
-      gap: 15px; /* ระยะห่างระหว่างกล่องค้นหากับปุ่ม Admin */
-    }
+    .navbar-right { display: flex; align-items: center; gap: 15px; }
 
-    /* ระบบค้นหา */
-    .search-container {
-      display: flex; gap: 8px; width: 350px; /* กำหนดความกว้างให้พอดี */
-    }
+    .search-container { display: flex; gap: 8px; width: 350px; }
     .search-container input {
       flex-grow: 1; padding: 10px 15px; border-radius: 6px; border: none;
-      font-family: 'Prompt', sans-serif; font-size: 0.95rem; outline: none;
-      box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+      font-family: 'Prompt', sans-serif; font-size: 0.95rem; outline: none; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
     }
     .search-container button {
       background-color: #3498DB; color: white; border: none; padding: 10px 20px;
-      border-radius: 6px; cursor: pointer; font-family: 'Prompt', sans-serif; font-weight: 500;
-      transition: 0.3s;
+      border-radius: 6px; cursor: pointer; font-family: 'Prompt', sans-serif; font-weight: 500; transition: 0.3s;
     }
     .search-container button:hover { background-color: #2980B9; }
 
-    /* ปุ่ม Admin */
+    /* ปุ่มเมนูต่างๆ */
+    .btn-measure {
+      background-color: #9B59B6; color: white; border: none; padding: 10px 18px;
+      font-family: 'Prompt', sans-serif; font-size: 1rem; border-radius: 6px;
+      cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 8px; font-weight: 500; white-space: nowrap;
+    }
+    .btn-measure:hover { background-color: #8E44AD; transform: translateY(-2px); }
+    .btn-measure.active { background-color: #E74C3C; }
+
     .btn-admin {
       background-color: #F39C12; color: white; border: none; padding: 10px 18px;
       font-family: 'Prompt', sans-serif; font-size: 1rem; border-radius: 6px;
-      cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 8px; font-weight: 500;
-      white-space: nowrap; /* ป้องกันข้อความในปุ่มตกบรรทัด */
+      cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 8px; font-weight: 500; white-space: nowrap;
     }
     .btn-admin:hover { background-color: #D68910; transform: translateY(-2px); }
     .btn-admin.active { background-color: #27AE60; }
 
+    /* Sidebar */
+    .content-area { display: flex; flex-grow: 1; position: relative; height: calc(100vh - 80px); }
+    
+    .sidebar {
+      width: 340px; flex-shrink: 0; background-color: #ffffff; box-shadow: 3px 0 10px rgba(0,0,0,0.1);
+      z-index: 1000; transition: margin-left 0.3s ease; display: flex; flex-direction: column;
+    }
+    .sidebar.collapsed { margin-left: -340px; }
+    .sidebar-inner { display: flex; flex-direction: column; height: 100%; width: 340px; }
+    
+    .sidebar-header {
+      background-color: #2C3E50; color: white; padding: 15px 20px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .sidebar-header h3 { margin: 0; font-size: 1.1rem; font-weight: 500; }
+    .close-btn { background: none; border: none; color: white; cursor: pointer; font-size: 1.2rem; }
+    
+    .layer-list { padding: 10px; overflow-y: auto; flex-grow: 1; }
+    .layer-group-container { margin-bottom: 8px; background: #fdfdfd; border: 1px solid #eee; border-radius: 6px; }
+    .layer-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-radius: 6px; }
+    .layer-item:hover { background-color: #f4f6f9; }
+    .main-layer-item { border-bottom: 1px solid #f0f0f0; background-color: #f8f9fa; }
+    .main-layer-item .layer-name { font-weight: 600; color: #2C3E50; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+    .main-layer-item .layer-name:hover { color: #3498DB; }
+    
+    .sub-layer-list { padding-left: 20px; padding-right: 10px; display: none; border-left: 2px solid #e0e0e0; margin-left: 15px; margin-bottom: 5px; }
+    .sub-layer-list.open { display: block; }
+    .sub-layer-item { padding: 8px 10px; border-bottom: 1px dashed #eee; }
+    .sub-layer-item:last-child { border-bottom: none; }
+    .sub-layer-item .layer-name { font-size: 0.9rem; color: #555; }
+    
+    .layer-actions { display: flex; gap: 15px; align-items: center; }
+    .action-icon { cursor: pointer; font-size: 1.1rem; color: #2C3E50; transition: 0.2s; }
+    .action-icon:hover { opacity: 0.7; }
+    
+    .open-sidebar-btn {
+      position: absolute; top: 15px; left: 15px; z-index: 999;
+      background: #2C3E50; color: white; border: none; padding: 10px 15px; font-family: 'Prompt', sans-serif;
+      border-radius: 6px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      display: none; align-items: center; gap: 8px; font-size: 0.95rem;
+    }
+
     #map { flex-grow: 1; width: 100%; z-index: 1; }
 
-    /* Responsive มือถือและแท็บเล็ต */
-    @media (max-width: 900px) {
+    /* ปรับแต่ง SweetAlert2 ให้เข้ากับฟอนต์เว็บ */
+    div:where(.swal2-container) div:where(.swal2-popup) { font-family: 'Prompt', sans-serif !important; }
+
+    @media (max-width: 950px) {
       .navbar { flex-direction: column; align-items: stretch; gap: 15px; }
       .navbar-title { justify-content: center; }
       .navbar-right { flex-direction: column; width: 100%; gap: 10px; }
       .search-container { width: 100%; }
-      .btn-admin { justify-content: center; width: 100%; }
+      .btn-measure, .btn-admin { justify-content: center; width: 100%; }
+      .sidebar { position: absolute; height: 100%; }
     }
   </style>
 </head>
@@ -81,48 +126,226 @@
     <div class="navbar-title">
       <img src="https://img2.pic.in.th/pic/71f81565dc59a7f9545542493a5514ab.png" alt="โลโก้เทศบาลตำบลตันหยงมัส" class="nav-logo">
       <div class="title-text">
-        <h1>แผนที่ชุมชน เทศบาลตำบลตันหยงมัส</h1>
+        <h1>แผนที่ชุมชน</h1>
+        <span>เทศบาลตำบลตันหยงมัส</span>
       </div>
     </div>
     
     <div class="navbar-right">
       <div class="search-container">
-        <input type="text" id="searchInput" list="searchOptions" placeholder="🔍 ค้นหาชื่อชุมชน หรือถนน...">
-        <datalist id="searchOptions"></datalist>
+        <input type="text" id="searchInput" placeholder="🔍 ค้นหาชื่อชุมชน หรือสถานที่...">
         <button id="searchBtn">ค้นหา</button>
       </div>
-      <button id="adminBtn" class="btn-admin">🔒 เข้าสู่ระบบแอดมิน</button>
+      <button id="measureBtn" class="btn-measure"><i class="fa-solid fa-ruler-combined"></i> เครื่องมือวัด</button>
+      <button id="adminBtn" class="btn-admin"><i class="fa-solid fa-user-shield"></i></button>
     </div>
   </div>
 
-  <div id="map"></div>
+  <div class="content-area">
+    <div id="sidebar" class="sidebar collapsed">
+      <div class="sidebar-inner">
+        <div class="sidebar-header">
+          <h3><i class="fa-solid fa-layer-group"></i> ชั้นข้อมูล (Layers)</h3>
+          <button class="close-btn" id="closeSidebar" title="พับเก็บ"><i class="fa-solid fa-chevron-left"></i></button>
+        </div>
+        <div id="layerList" class="layer-list"></div>
+      </div>
+    </div>
+
+    <button class="open-sidebar-btn" id="openSidebar" style="display: flex;">
+      <i class="fa-solid fa-chevron-right"></i> เปิดชั้นข้อมูล
+    </button>
+
+    <div id="map"></div>
+  </div>
 
   <script>
     const MAP_CENTER = [6.29445, 101.72362];
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzN3IxvSwJEd2Zz3zhf53R0130SCEMPm4IEmhJPRy0rmgX-QsagZMhHTP7VTUyHi0u_/exec'; // ⚠️ อย่าลืมใส่ URL ใหม่ของคุณ
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzN3IxvSwJEd2Zz3zhf53R0130SCEMPm4IEmhJPRy0rmgX-QsagZMhHTP7VTUyHi0u_/exec'; // ⚠️ ใส่ URL ของคุณตรงนี้
     const ADMIN_PASSWORD = "1234";
 
-    const streetMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' });
+    const streetMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '© OpenStreetMap' });
     const satelliteMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { 
-    maxZoom: 19, 
-    attribution: '© Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community' 
-});
-    const map = L.map('map', {
-      center: MAP_CENTER,
-      zoom: 16,
-      layers: [streetMap] 
+      maxZoom: 18, attribution: '© Esri' 
     });
 
-    const baseMaps = {
-      "🗺️ แผนที่ถนน (Street)": streetMap,
-      "🛰️ แผนที่ดาวเทียม (Satellite)": satelliteMap
-    };
-    L.control.layers(baseMaps, null, { position: 'bottomright' }).addTo(map);
+    const map = L.map('map', { center: MAP_CENTER, zoom: 15, layers: [streetMap], zoomControl: false });
+    L.control.zoom({ position: 'bottomleft' }).addTo(map);
+    L.control.layers({ "🗺️ แผนที่ถนน": streetMap, "🛰️ แผนที่ดาวเทียม": satelliteMap }, null, { position: 'bottomright' }).addTo(map);
 
     const layerGroups = {}; 
+    const lockedLayers = {}; 
     let highlightHalo = null; 
     let selectedLayer = null; 
     let allSearchableLayers = []; 
+
+    document.getElementById('closeSidebar').onclick = () => {
+      document.getElementById('sidebar').classList.add('collapsed');
+      document.getElementById('openSidebar').style.display = 'flex'; 
+      setTimeout(() => map.invalidateSize(), 300);
+    };
+    document.getElementById('openSidebar').onclick = () => {
+      document.getElementById('sidebar').classList.remove('collapsed');
+      document.getElementById('openSidebar').style.display = 'none'; 
+      setTimeout(() => map.invalidateSize(), 300);
+    };
+
+    function renderSidebar() {
+      const layerList = document.getElementById('layerList');
+      layerList.innerHTML = '';
+
+      Object.keys(layerGroups).forEach(sheetName => {
+        
+        // 🌟 ตั้งค่าล็อคเป็นค่าเริ่มต้น หากในชีตนั้นมี "ขอบเขตเทศบาล"
+        let hasBoundary = layerGroups[sheetName]['🔲 ขอบเขตเทศบาล'] !== undefined;
+        lockedLayers[sheetName] = hasBoundary; 
+
+        const groupContainer = document.createElement('div');
+        groupContainer.className = 'layer-group-container';
+
+        const mainDiv = document.createElement('div');
+        mainDiv.className = 'layer-item main-layer-item';
+
+        const mainName = document.createElement('span');
+        mainName.className = 'layer-name';
+        mainName.innerHTML = `<i class="fa-solid fa-chevron-right toggle-arrow" style="width:15px"></i> ${sheetName}`;
+
+        const mainActions = document.createElement('div');
+        mainActions.className = 'layer-actions';
+
+        const mainEyeIcon = document.createElement('span');
+        mainEyeIcon.className = 'action-icon';
+        mainEyeIcon.innerHTML = '<i class="fa-solid fa-eye"></i>'; 
+        mainEyeIcon.title = "เปิด/ปิด ข้อมูลทั้งหมดในชุมชนนี้";
+
+        const lockIcon = document.createElement('span');
+        lockIcon.className = 'action-icon';
+        
+        // หากถูกกำหนดให้ล็อคเป็นค่าเริ่มต้น ให้แสดงไอคอนกุญแจแดง
+        if (lockedLayers[sheetName]) {
+          lockIcon.innerHTML = '<i class="fa-solid fa-lock"></i>'; 
+          lockIcon.style.color = '#E74C3C';
+        } else {
+          lockIcon.innerHTML = '<i class="fa-solid fa-lock-open"></i>'; 
+          lockIcon.title = "ล็อคการคลิกและแก้ไข";
+        }
+
+        mainActions.appendChild(mainEyeIcon);
+        mainActions.appendChild(lockIcon);
+        mainDiv.appendChild(mainName);
+        mainDiv.appendChild(mainActions);
+
+        const subListContainer = document.createElement('div');
+        subListContainer.className = 'sub-layer-list'; 
+
+        mainName.onclick = () => {
+          subListContainer.classList.toggle('open');
+          const arrow = mainName.querySelector('.toggle-arrow');
+          if(subListContainer.classList.contains('open')) arrow.classList.replace('fa-chevron-right', 'fa-chevron-down');
+          else arrow.classList.replace('fa-chevron-down', 'fa-chevron-right');
+        };
+
+        let isMainEyeOpen = true;
+        const subCats = Object.keys(layerGroups[sheetName]);
+
+        subCats.forEach(catName => {
+          const subDiv = document.createElement('div');
+          subDiv.className = 'layer-item sub-layer-item';
+
+          const subName = document.createElement('span');
+          subName.className = 'layer-name';
+          subName.innerText = catName;
+
+          const subActions = document.createElement('div');
+          subActions.className = 'layer-actions';
+
+          const subEyeIcon = document.createElement('span');
+          subEyeIcon.className = 'action-icon';
+          subEyeIcon.innerHTML = '<i class="fa-solid fa-eye"></i>';
+          const safeId = `${sheetName}-${catName}`.replace(/\s+/g, '-');
+          subEyeIcon.id = `eye-${safeId}`;
+
+          subEyeIcon.onclick = () => {
+            const group = layerGroups[sheetName][catName];
+            if (map.hasLayer(group)) {
+              map.removeLayer(group);
+              subEyeIcon.innerHTML = '<i class="fa-solid fa-eye-slash"></i>'; subEyeIcon.style.color = '#95A5A6';
+            } else {
+              map.addLayer(group);
+              subEyeIcon.innerHTML = '<i class="fa-solid fa-eye"></i>'; subEyeIcon.style.color = '#2C3E50';
+              if (lockedLayers[sheetName]) {
+                group.eachLayer(layer => {
+                  if (layer.getElement) layer.getElement().style.pointerEvents = 'none';
+                  if (layer._icon) layer._icon.style.pointerEvents = 'none';
+                });
+              }
+            }
+          };
+
+          subActions.appendChild(subEyeIcon);
+          subDiv.appendChild(subName);
+          subDiv.appendChild(subActions);
+          subListContainer.appendChild(subDiv);
+        });
+
+        mainEyeIcon.onclick = () => {
+          isMainEyeOpen = !isMainEyeOpen;
+          if (isMainEyeOpen) {
+            mainEyeIcon.innerHTML = '<i class="fa-solid fa-eye"></i>'; mainEyeIcon.style.color = '#2C3E50';
+            subCats.forEach(catName => {
+              const group = layerGroups[sheetName][catName];
+              if (!map.hasLayer(group)) map.addLayer(group);
+              const subEye = document.getElementById(`eye-${sheetName}-${catName}`.replace(/\s+/g, '-'));
+              if(subEye) { subEye.innerHTML = '<i class="fa-solid fa-eye"></i>'; subEye.style.color = '#2C3E50'; }
+            });
+          } else {
+            mainEyeIcon.innerHTML = '<i class="fa-solid fa-eye-slash"></i>'; mainEyeIcon.style.color = '#95A5A6';
+            subCats.forEach(catName => {
+              const group = layerGroups[sheetName][catName];
+              if (map.hasLayer(group)) map.removeLayer(group);
+              const subEye = document.getElementById(`eye-${sheetName}-${catName}`.replace(/\s+/g, '-'));
+              if(subEye) { subEye.innerHTML = '<i class="fa-solid fa-eye-slash"></i>'; subEye.style.color = '#95A5A6'; }
+            });
+          }
+        };
+
+        lockIcon.onclick = () => {
+          lockedLayers[sheetName] = !lockedLayers[sheetName];
+          const isLocked = lockedLayers[sheetName];
+
+          if (isLocked) { lockIcon.innerHTML = '<i class="fa-solid fa-lock"></i>'; lockIcon.style.color = '#E74C3C'; } 
+          else { lockIcon.innerHTML = '<i class="fa-solid fa-lock-open"></i>'; lockIcon.style.color = '#2C3E50'; }
+
+          subCats.forEach(catName => {
+            layerGroups[sheetName][catName].eachLayer(layer => {
+              if (layer.getElement && layer.getElement()) layer.getElement().style.pointerEvents = isLocked ? 'none' : 'auto';
+              if (layer._icon) layer._icon.style.pointerEvents = isLocked ? 'none' : 'auto';
+            });
+          });
+
+          if (isLocked && selectedLayer && selectedLayer.sheetName === sheetName) {
+            resetHighlight(); map.closePopup();
+          }
+        };
+
+        groupContainer.appendChild(mainDiv);
+        groupContainer.appendChild(subListContainer);
+        layerList.appendChild(groupContainer);
+
+        // 🌟 หากชีตนี้ถูกตั้งให้ล็อคแต่แรก ให้ล้างการรับรู้เมาส์ทิ้งไปเลย (รันช้าๆ เพื่อรอวาดเสร็จ)
+        if (lockedLayers[sheetName]) {
+          setTimeout(() => {
+            subCats.forEach(catName => {
+              layerGroups[sheetName][catName].eachLayer(layer => {
+                if (layer.getElement && layer.getElement()) layer.getElement().style.pointerEvents = 'none';
+                if (layer._icon) layer._icon.style.pointerEvents = 'none';
+              });
+            });
+          }, 500);
+        }
+
+      });
+    }
 
     function resetHighlight() {
       if (highlightHalo) { map.removeLayer(highlightHalo); highlightHalo = null; }
@@ -134,50 +357,42 @@
     map.on('click', resetHighlight);
 
     function triggerHighlight(layer) {
+      if (lockedLayers[layer.sheetName]) return;
       resetHighlight();
       
-      if (layer instanceof L.Marker) {
-        map.flyTo(layer.getLatLng(), 17, { duration: 1.5 });
-        layer.openPopup();
-        return;
-      }
+      if (layer instanceof L.Marker) { map.flyTo(layer.getLatLng(), 17, { duration: 1.5 }); layer.openPopup(); return; }
 
       selectedLayer = layer;
       const isPolygon = selectedLayer instanceof L.Polygon;
       const currentWeight = selectedLayer.defaultStyle.weight || 2;
-
       const haloStyle = { color: '#FFFFFF', weight: currentWeight + 6, opacity: 1, fill: false, dashArray: '' };
 
       if (isPolygon) highlightHalo = L.polygon(selectedLayer.getLatLngs(), haloStyle).addTo(map);
       else highlightHalo = L.polyline(selectedLayer.getLatLngs(), haloStyle).addTo(map);
 
-      if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-        highlightHalo.bringToFront();
-        selectedLayer.bringToFront();
-      }
+      if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) { highlightHalo.bringToFront(); selectedLayer.bringToFront(); }
+      if (selectedLayer.defaultStyle.fillOpacity > 0) selectedLayer.setStyle({ fillOpacity: 0.6 });
 
-      if (selectedLayer.defaultStyle.fillOpacity > 0) {
-        selectedLayer.setStyle({ fillOpacity: 0.6 });
-      }
-
-      map.flyToBounds(selectedLayer.getBounds(), { 
-        padding: [60, 60],  // เพิ่มตัวเลขให้มากขึ้น (เช่น [100, 100]) ถ้าอยากให้ซูมออกมาดูกว้างขึ้น
-        maxZoom: 18,        // ล็อกไม่ให้ซูมใกล้เกินระดับ 16 (ตัวเลขยิ่งเยอะ ยิ่งซูมใกล้ ปรับได้ระหว่าง 1-19)
-        duration: 1.8       // ความเร็วในการซูม (วินาที)
-    });
+      map.flyToBounds(selectedLayer.getBounds(), { padding: [50, 50], maxZoom: 16, duration: 1.5 });
       selectedLayer.openPopup();
     }
+
+    // --- ดึงข้อมูลจาก Google Sheets ---
+    // (แสดงแจ้งเตือนตอนกำลังโหลด)
+    Swal.fire({ title: 'กำลังโหลดข้อมูลแผนที่...', text: 'กรุณารอสักครู่', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
     fetch(SCRIPT_URL)
       .then(response => response.json())
       .then(data => {
-        const datalist = document.getElementById('searchOptions');
-
         data.forEach(item => {
           try {
             const latlngs = JSON.parse(item.coords);
-            let mapLayer;
-            let defaultStyle = {}; 
+            let mapLayer; let defaultStyle = {}; 
+            
+            let categoryName = '🟩 พื้นที่ชุมชน';
+            if (item.type === 'marker') categoryName = '📍 สถานที่สำคัญ';
+            else if (item.type === 'polyline') categoryName = '🛣️ ถนนในชุมชน';
+            else if (item.type === 'boundary') categoryName = '🔲 ขอบเขตเทศบาล';
 
             if (item.type === 'marker') {
               let markerOptions = {};
@@ -186,106 +401,212 @@
               }
               mapLayer = L.marker(latlngs, markerOptions);
             } else {
-              if (item.type === 'boundary') {
-                defaultStyle = { color: item.color || '#FF0000', weight: 2, dashArray: '6, 10', fillOpacity: 0 };
-                mapLayer = L.polygon(latlngs, defaultStyle);
-              } else if (item.type === 'polyline') {
-                defaultStyle = { color: item.color, weight: 6, opacity: 0.9 };
-                mapLayer = L.polyline(latlngs, defaultStyle);
-              } else {
-                defaultStyle = { color: item.color, fillColor: item.color, fillOpacity: 0.4, weight: 2 };
-                mapLayer = L.polygon(latlngs, defaultStyle);
-              }
+              if (item.type === 'boundary') defaultStyle = { color: item.color || '#FF0000', weight: 4, dashArray: '10, 10', fillOpacity: 0 };
+              else if (item.type === 'polyline') defaultStyle = { color: item.color, weight: 5, opacity: 0.9 };
+              else defaultStyle = { color: item.color, fillColor: item.color, fillOpacity: 0.4, weight: 2 };
+              
+              mapLayer = item.type === 'polyline' ? L.polyline(latlngs, defaultStyle) : L.polygon(latlngs, defaultStyle);
               mapLayer.defaultStyle = defaultStyle;
             }
             
-            mapLayer.bindPopup(`<div style="font-family:'Prompt'; font-size:14px; text-align:center;"><b>${item.name}</b><br><small>(${item.sheetName})</small></div>`);
+            mapLayer.sheetName = item.sheetName; 
+            mapLayer.categoryName = categoryName; 
+            mapLayer.bindPopup(`<div style="font-family:'Prompt'; font-size:14px; text-align:center;"><b>${item.name}</b><br><small>(${item.sheetName} - ${categoryName.substring(2)})</small></div>`);
 
-            mapLayer.on('click', function(e) {
-              L.DomEvent.stopPropagation(e); 
-              triggerHighlight(e.target);
-            });
+            mapLayer.on('click', function(e) { L.DomEvent.stopPropagation(e); triggerHighlight(e.target); });
 
-            if (!layerGroups[item.sheetName]) { layerGroups[item.sheetName] = L.layerGroup().addTo(map); }
-            layerGroups[item.sheetName].addLayer(mapLayer);
-
-            allSearchableLayers.push({ name: item.name, layer: mapLayer, sheetName: item.sheetName });
+            if (!layerGroups[item.sheetName]) layerGroups[item.sheetName] = {};
+            if (!layerGroups[item.sheetName][categoryName]) layerGroups[item.sheetName][categoryName] = L.layerGroup().addTo(map);
             
-            const option = document.createElement('option');
-            option.value = item.name;
-            datalist.appendChild(option);
+            layerGroups[item.sheetName][categoryName].addLayer(mapLayer);
+            allSearchableLayers.push({ name: item.name, layer: mapLayer, sheetName: item.sheetName, catName: categoryName });
 
           } catch(e) { console.error("พิกัดไม่ถูกต้องสำหรับ: " + item.name); }
         });
-
-        L.control.layers(null, layerGroups, { collapsed: false, position: 'topright' }).addTo(map);
+        renderSidebar(); 
+        Swal.close(); // ปิดแจ้งเตือนเมื่อโหลดเสร็จ
       })
-      .catch(err => console.error("ไม่สามารถเชื่อมต่อฐานข้อมูลได้:", err));
+      .catch(err => {
+        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้', 'error');
+        console.error(err);
+      });
 
+    // --- ระบบค้นหา (ใช้ SweetAlert2 แทน Alert) ---
     function executeSearch() {
-      const searchValue = document.getElementById('searchInput').value.trim();
+      const searchValue = document.getElementById('searchInput').value.trim().toLowerCase();
       if(!searchValue) return;
 
-      const result = allSearchableLayers.find(item => item.name === searchValue);
+      const result = allSearchableLayers.find(item => item.name.toLowerCase().includes(searchValue));
       
       if (result) {
-        if (!map.hasLayer(layerGroups[result.sheetName])) {
-          map.addLayer(layerGroups[result.sheetName]);
+        const targetGroup = layerGroups[result.sheetName][result.catName];
+        if (!map.hasLayer(targetGroup)) {
+          map.addLayer(targetGroup);
+          const safeId = `${result.sheetName}-${result.catName}`.replace(/\s+/g, '-');
+          const eyeIcon = document.getElementById(`eye-${safeId}`);
+          if(eyeIcon) { eyeIcon.innerHTML = '<i class="fa-solid fa-eye"></i>'; eyeIcon.style.color = '#2C3E50'; }
         }
-        triggerHighlight(result.layer);
-      } else {
-        alert("ไม่พบข้อมูลชุมชน หรือสถานที่นี้ครับ");
+
+        if (lockedLayers[result.sheetName]) {
+           // แจ้งเตือนด้วย SweetAlert2 แบบนุ่มนวล
+           Swal.fire({
+             title: 'เลเยอร์ถูกล็อค!',
+             html: `ค้นพบ <b>${result.name}</b><br>แต่หมวดหมู่นี้ถูกล็อคอยู่ แผนที่จะเลื่อนไปหาแต่คุณจะไม่สามารถคลิกดูรายละเอียดได้ครับ`,
+             icon: 'info', timer: 4000, showConfirmButton: false, position: 'top-end', toast: true
+           });
+           if (result.layer instanceof L.Marker) map.flyTo(result.layer.getLatLng(), 17);
+           else map.flyToBounds(result.layer.getBounds(), { padding: [50, 50], maxZoom: 16 });
+        } else {
+           triggerHighlight(result.layer);
+        }
+      } else { 
+        Swal.fire('ไม่พบข้อมูล!', 'ไม่พบข้อมูลชุมชน หรือสถานที่ที่คุณค้นหาครับ', 'warning'); 
       }
     }
 
     document.getElementById('searchBtn').addEventListener('click', executeSearch);
-    
-    document.getElementById('searchInput').addEventListener('keypress', function (e) {
-      if (e.key === 'Enter') executeSearch();
+    document.getElementById('searchInput').addEventListener('keypress', function (e) { if (e.key === 'Enter') executeSearch(); });
+
+    // --- ส่วนของเครื่องมือวัดระยะทางและพื้นที่ (ใช้ SweetAlert2) ---
+    let isMeasureMode = false;
+    let currentMeasureDrawer = null;
+    const measureLayerGroup = new L.FeatureGroup().addTo(map);
+
+    function startMeasureMode() {
+      measureLayerGroup.clearLayers(); 
+      isMeasureMode = true;
+      currentMeasureDrawer.enable(); 
+      document.getElementById('measureBtn').innerHTML = '<i class="fa-solid fa-times"></i> ยกเลิกการวัด';
+      document.getElementById('measureBtn').classList.add('active');
+    }
+
+    document.getElementById('measureBtn').addEventListener('click', () => {
+      if (isMeasureMode) {
+        if(currentMeasureDrawer) currentMeasureDrawer.disable();
+        isMeasureMode = false;
+        document.getElementById('measureBtn').innerHTML = '<i class="fa-solid fa-ruler-combined"></i> เครื่องมือวัด';
+        document.getElementById('measureBtn').classList.remove('active');
+        measureLayerGroup.clearLayers(); 
+      } else {
+        // ใช้ SweetAlert2 สร้างปุ่มตัวเลือก 2 ปุ่ม
+        Swal.fire({
+          title: 'เลือกเครื่องมือวัด',
+          icon: 'question',
+          showDenyButton: true,
+          showCancelButton: true,
+          confirmButtonText: '<i class="fa-solid fa-route"></i> วัดระยะทาง',
+          denyButtonText: '<i class="fa-solid fa-draw-polygon"></i> วัดพื้นที่',
+          cancelButtonText: 'ยกเลิก',
+          confirmButtonColor: '#9B59B6',
+          denyButtonColor: '#3498DB'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            currentMeasureDrawer = new L.Draw.Polyline(map, { shapeOptions: { color: '#9B59B6', weight: 5, dashArray: '5, 5' } });
+            startMeasureMode();
+          } else if (result.isDenied) {
+            currentMeasureDrawer = new L.Draw.Polygon(map, { shapeOptions: { color: '#9B59B6', weight: 3, fillOpacity: 0.3 } });
+            startMeasureMode();
+          }
+        });
+      }
     });
 
-    let isAdmin = false;
-    const drawnItems = new L.FeatureGroup();
-    map.addLayer(drawnItems);
-    
-    const drawControl = new L.Control.Draw({
-      edit: { featureGroup: drawnItems },
-      draw: { polygon: true, polyline: true, marker: true, rectangle: false, circle: false, circlemarker: false }
-    });
-
-    document.getElementById('adminBtn').addEventListener('click', () => {
-      if (isAdmin) { alert("คุณอยู่ในโหมดแอดมินแล้ว"); return; }
-      const pass = prompt("กรุณาใส่รหัสผ่านสำหรับเจ้าหน้าที่ (Admin):");
-      
-      if (pass === ADMIN_PASSWORD) {
-        isAdmin = true;
-        map.addControl(drawControl); 
-        const btn = document.getElementById('adminBtn');
-        btn.innerHTML = "👨‍💻 โหมดแอดมิน (พร้อมแก้ไข)";
-        btn.classList.add('active');
-        alert("เข้าสู่ระบบแอดมินสำเร็จ!");
-      } else if (pass !== null) { alert("รหัสผ่านไม่ถูกต้อง!"); }
-    });
+    const drawnItems = new L.FeatureGroup(); map.addLayer(drawnItems);
+    const drawControl = new L.Control.Draw({ edit: { featureGroup: drawnItems }, draw: { polygon: true, polyline: true, marker: true, rectangle: false, circle: false, circlemarker: false } });
 
     map.on(L.Draw.Event.CREATED, function (event) {
-      const layer = event.layer; const type = event.layerType; let coordsArray;
-      if (type === 'polygon') coordsArray = layer.getLatLngs()[0].map(point => [point.lat, point.lng]);
-      else if (type === 'polyline') coordsArray = layer.getLatLngs().map(point => [point.lat, point.lng]);
-      else if (type === 'marker') coordsArray = [layer.getLatLng().lat, layer.getLatLng().lng];
+      const layer = event.layer; 
+      const type = event.layerType; 
       
-      const coordsString = JSON.stringify(coordsArray);
-      let typeTH = type === 'polygon' ? 'พื้นที่' : (type === 'polyline' ? 'เส้นถนน' : 'จุดสถานที่');
+      if (isMeasureMode) {
+        measureLayerGroup.addLayer(layer);
+        
+        if (type === 'polyline') {
+          let latlngs = layer.getLatLngs();
+          let distance = 0;
+          for (let i = 0; i < latlngs.length - 1; i++) distance += latlngs[i].distanceTo(latlngs[i + 1]);
+          let txt = distance > 1000 ? (distance/1000).toFixed(2) + ' กิโลเมตร' : distance.toFixed(0) + ' เมตร';
+          layer.bindPopup(`<div style="font-family:'Prompt'; text-align:center;"><b>📏 ระยะทางรวม:</b><br>${txt}</div>`).openPopup();
+        } 
+        else if (type === 'polygon') {
+          let latlngs = layer.getLatLngs()[0];
+          let area = L.GeometryUtil.geodesicArea(latlngs);
+          let rai = Math.floor(area / 1600);
+          let remainderArea = area % 1600;
+          let ngan = Math.floor(remainderArea / 400);
+          let sqwa = (remainderArea % 400) / 4;
+          layer.bindPopup(`<div style="font-family:'Prompt'; text-align:center;"><b>📐 พื้นที่รวม:</b><br>${area.toFixed(0)} ตารางเมตร<br><hr style="margin:5px 0"><small style="color:#E74C3C"><b>ประมาณ: ${rai} ไร่ ${ngan} งาน ${sqwa.toFixed(1)} ตร.ว.</b></small></div>`).openPopup();
+        }
+
+        isMeasureMode = false;
+        document.getElementById('measureBtn').innerHTML = '<i class="fa-solid fa-ruler-combined"></i> เครื่องมือวัด';
+        document.getElementById('measureBtn').classList.remove('active');
+
+      } else {
+        // --- ระบบก๊อปปี้พิกัดด้วย SweetAlert2 ---
+        let coordsArray;
+        if (type === 'polygon') coordsArray = layer.getLatLngs()[0].map(point => [point.lat, point.lng]);
+        else if (type === 'polyline') coordsArray = layer.getLatLngs().map(point => [point.lat, point.lng]);
+        else if (type === 'marker') coordsArray = [layer.getLatLng().lat, layer.getLatLng().lng];
+        
+        const coordsString = JSON.stringify(coordsArray);
+        let typeTH = type === 'polygon' ? 'พื้นที่' : (type === 'polyline' ? 'เส้นถนน' : 'จุดสถานที่');
+        
+        Swal.fire({
+          title: `เพิ่ม${typeTH}เสร็จแล้ว!`,
+          html: `<p style="font-size:0.95rem">ก๊อปปี้พิกัดด้านล่างไปวางใน <b>ช่อง C</b> ของชีตที่คุณต้องการ<br><small style="color:gray;">(และอย่าลืมพิมพ์คำว่า <b>${type}</b> ลงใน <b>ช่อง D</b> ด้วยนะครับ)</small></p>`,
+          input: 'textarea',
+          inputValue: coordsString,
+          showCancelButton: true,
+          confirmButtonText: '<i class="fa-solid fa-copy"></i> คัดลอกพิกัด',
+          cancelButtonText: 'ปิด',
+          confirmButtonColor: '#27AE60',
+          didOpen: () => {
+            const input = Swal.getInput();
+            input.style.height = '120px';
+            input.setAttribute('readonly', true);
+          }
+        }).then((result) => {
+          if (result.isConfirmed) {
+            navigator.clipboard.writeText(coordsString).then(() => {
+              Swal.fire({ icon: 'success', title: 'คัดลอกแล้ว!', text: 'นำไปวางใน Google Sheet ได้เลยครับ', timer: 2000, showConfirmButton: false });
+            });
+          }
+        });
+        drawnItems.addLayer(layer);
+      }
+    });
+
+    // --- ส่วนของ Admin (ใช้ SweetAlert2 เข้าสู่ระบบ) ---
+    let isAdmin = false;
+    document.getElementById('adminBtn').addEventListener('click', () => {
+      if (isAdmin) { 
+        Swal.fire('โหมดแอดมิน', 'คุณอยู่ในโหมดแอดมินแล้ว สามารถใช้งานเครื่องมือวาดฝั่งซ้ายได้เลยครับ', 'info'); 
+        return; 
+      }
       
-      window.prompt(`เพิ่ม ${typeTH} เสร็จแล้ว!\nก๊อปปี้พิกัดไปวางในช่อง C ของชีตชุมชนที่ต้องการ\n(ใส่ประเภทในช่อง D ให้ถูกต้องด้วยนะครับ)`, coordsString);
-      drawnItems.addLayer(layer);
+      Swal.fire({
+        title: 'เข้าสู่ระบบแอดมิน',
+        input: 'password',
+        inputPlaceholder: 'กรุณาใส่รหัสผ่าน...',
+        showCancelButton: true,
+        confirmButtonText: 'เข้าสู่ระบบ',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#F39C12'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          if (result.value === ADMIN_PASSWORD) {
+            isAdmin = true; map.addControl(drawControl); 
+            const btn = document.getElementById('adminBtn');
+            btn.innerHTML = '<i class="fa-solid fa-user-shield"></i> โหมดแอดมิน (พร้อมแก้ไข)'; 
+            btn.classList.add('active');
+            Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: 'เข้าสู่ระบบแอดมินเรียบร้อยแล้ว เครื่องมือวาดจะปรากฏที่ซ้ายมือ', timer: 2500, showConfirmButton: false });
+          } else { 
+            Swal.fire('ผิดพลาด!', 'รหัสผ่านไม่ถูกต้อง', 'error'); 
+          }
+        }
+      });
     });
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
