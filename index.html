@@ -397,7 +397,7 @@
             if (item.type === 'marker') {
               let markerOptions = {};
               if (item.icon && item.icon.trim() !== "") {
-                markerOptions.icon = L.icon({ iconUrl: item.icon, iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
+                markerOptions.icon = L.icon({ iconUrl: item.icon, iconSize: [24, 24], iconAnchor: [16, 32], popupAnchor: [0, -32] });
               }
               mapLayer = L.marker(latlngs, markerOptions);
             } else {
@@ -610,3 +610,4 @@
   </script>
 </body>
 </html>
+
